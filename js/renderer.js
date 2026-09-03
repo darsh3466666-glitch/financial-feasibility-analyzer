@@ -311,15 +311,16 @@ const Renderer = {
       const turnoverText = isCash ? 'نقدي ∞' : formatNumber(client.annualizedTurnover, 1);
       const dsoText = isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`;
 
+      let classColor = 'var(--accent-success)';
+      if (client.classification === 'average') classColor = 'var(--accent-warning)';
+      if (client.classification === 'poor') classColor = 'var(--accent-danger)';
+
       const markupVal = isCash ? 0 : (client.totalMarkupPct || 0);
-      const markupText = isCash
-        ? '<span style="color: var(--accent-success); font-weight: 600;">0.0% (كاش)</span>'
-        : `<span style="color: ${markupVal > 5 ? 'var(--accent-danger)' : 'var(--accent-gold)'}; font-weight: 600;">+${formatPercent(markupVal)}</span>`;
+      const markupContent = isCash ? '0.0% (كاش)' : `+${formatPercent(markupVal)}`;
+      const markupText = `<span style="color: ${classColor}; font-weight: 600;">${markupContent}</span>`;
 
       const priceVal = (client.suggestedPrice && client.suggestedPrice > 0) ? client.suggestedPrice : (client.cashPrice || 0);
-      const priceText = isCash
-        ? `<span style="color: var(--accent-success); font-weight: 700;">${formatNumber(priceVal)} جنيه</span>`
-        : `<span style="color: var(--accent-gold); font-weight: 700;">${formatNumber(priceVal)} جنيه</span>`;
+      const priceText = `<span style="color: ${classColor}; font-weight: 700;">${formatNumber(priceVal)} جنيه</span>`;
 
       return `
       <tr class="animate-in" style="animation-delay: ${Math.min(index * 30, 300)}ms">
@@ -358,6 +359,10 @@ const Renderer = {
     const turnoverText = isCash ? 'نقدي ∞' : `${formatNumber(client.annualizedTurnover, 1)} مرة`;
     const dsoText = isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`;
     const priceVal = (client.suggestedPrice && client.suggestedPrice > 0) ? client.suggestedPrice : (client.cashPrice || 0);
+
+    let classColor = 'var(--accent-success)';
+    if (client.classification === 'average') classColor = 'var(--accent-warning)';
+    if (client.classification === 'poor') classColor = 'var(--accent-danger)';
 
     document.getElementById('modal-client-name').textContent = client.clientName;
 
@@ -414,11 +419,11 @@ const Renderer = {
         </div>
         <div class="client-detail-item">
           <span class="detail-label">السعر المقترح للوحدة</span>
-          <span class="detail-value" style="color: var(--accent-gold); font-weight: var(--weight-bold);">${formatNumber(priceVal)} جنيه</span>
+          <span class="detail-value" style="color: ${classColor}; font-weight: var(--weight-bold);">${formatNumber(priceVal)} جنيه</span>
         </div>
         <div class="client-detail-item">
           <span class="detail-label">نسبة الزيادة المقترحة</span>
-          <span class="detail-value" style="color: ${isCash ? 'var(--accent-success)' : 'var(--accent-gold)'}; font-weight: 600;">
+          <span class="detail-value" style="color: ${classColor}; font-weight: 600;">
             ${isCash ? '0.0% (سعر الكاش)' : `+${formatPercent(client.totalMarkupPct)}`}
           </span>
         </div>
