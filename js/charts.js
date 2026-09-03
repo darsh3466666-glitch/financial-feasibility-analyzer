@@ -10,6 +10,9 @@ const ChartsManager = {
    * تهيئة جميع الرسوم البيانية
    */
   renderAll(classifiedClients, salesByClass, summary) {
+    if (window.Chart) {
+      Chart.defaults.font.family = "'Alexandria', 'IBM Plex Sans Arabic', sans-serif";
+    }
     this.destroyAll();
     this.renderDSOBar(classifiedClients);
     this.renderFeasibilityScatter(classifiedClients, summary);

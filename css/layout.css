@@ -35,28 +35,36 @@
 }
 
 .app-logo .logo-icon {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, var(--accent-primary), #7C3AED);
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, #0A192F, #162B48);
+  border: 1px solid var(--accent-gold);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--accent-gold);
+  box-shadow: 0 4px 12px rgba(10, 25, 47, 0.15), 0 0 0 1px rgba(197, 160, 89, 0.2);
+}
+
+[data-theme="dark"] .app-logo .logo-icon {
+  background: linear-gradient(135deg, #0B1728, #182C48);
+  border-color: rgba(229, 195, 120, 0.4);
+  color: var(--accent-gold);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(229, 195, 120, 0.2);
 }
 
 .app-logo .logo-icon .icon {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 
 .app-logo h1 {
+  font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: var(--weight-bold);
-  background: linear-gradient(135deg, var(--accent-primary), #7C3AED);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .header-actions {
@@ -266,26 +274,38 @@
 }
 
 .filter-btn {
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
+  font-family: var(--font-display);
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  font-weight: var(--weight-semibold);
   border-radius: var(--radius-full);
   border: 1px solid var(--border-default);
   background-color: var(--bg-surface);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-default);
-  min-height: 36px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .filter-btn:hover {
-  border-color: var(--text-tertiary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-1px);
 }
 
 .filter-btn.active {
-  background-color: var(--accent-primary);
-  color: var(--text-inverse);
-  border-color: var(--accent-primary);
+  background: linear-gradient(135deg, #0F3B73, #0A2850);
+  color: #FFFFFF;
+  border-color: var(--accent-gold);
+  box-shadow: 0 2px 10px rgba(15, 59, 115, 0.25);
+}
+
+[data-theme="dark"] .filter-btn.active {
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
+  border-color: var(--accent-gold);
 }
 
 /* ── Hidden Sections ── */

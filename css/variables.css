@@ -3,56 +3,68 @@
    ============================================ */
 
 :root {
-  /* ── Color Palette: Light Mode ── */
-  --bg-primary: #F8F9FC;
-  --bg-secondary: #EEF0F6;
+  /* ── Color Palette: Royal Banking (Light Mode) ── */
+  --bg-primary: #F4F6FB;
+  --bg-secondary: #E9EEF6;
   --bg-surface: #FFFFFF;
-  --bg-surface-hover: #F1F3F9;
+  --bg-surface-hover: #F8FAFD;
   --bg-surface-elevated: #FFFFFF;
-  --bg-overlay: rgba(15, 17, 23, 0.45);
+  --bg-overlay: rgba(10, 25, 47, 0.55);
 
-  --text-primary: #1A1D2E;
-  --text-secondary: #6B7089;
-  --text-tertiary: #9498B0;
+  --text-primary: #0A192F;
+  --text-secondary: #4A5568;
+  --text-tertiary: #7D8A9E;
   --text-inverse: #FFFFFF;
 
-  --border-default: #E2E4ED;
-  --border-subtle: #ECEEF5;
-  --border-focus: #2563EB;
+  --border-default: #DCE3EE;
+  --border-subtle: #ECF0F7;
+  --border-focus: #0F3B73;
+  --border-gold: rgba(197, 160, 89, 0.35);
 
-  --accent-primary: #2563EB;
-  --accent-primary-hover: #1D4FD7;
-  --accent-primary-light: rgba(37, 99, 235, 0.10);
-  --accent-primary-surface: rgba(37, 99, 235, 0.06);
+  /* Bank Cobalt / Royal Navy */
+  --accent-primary: #0F3B73;
+  --accent-primary-hover: #0A2850;
+  --accent-primary-light: rgba(15, 59, 115, 0.09);
+  --accent-primary-surface: rgba(15, 59, 115, 0.05);
 
-  --accent-success: #059669;
-  --accent-success-light: rgba(5, 150, 105, 0.10);
-  --accent-success-surface: rgba(5, 150, 105, 0.06);
+  /* Prestige Champagne Gold */
+  --accent-gold: #C5A059;
+  --accent-gold-hover: #B28E46;
+  --accent-gold-light: rgba(197, 160, 89, 0.12);
+  --accent-gold-surface: rgba(197, 160, 89, 0.06);
 
-  --accent-warning: #D97706;
-  --accent-warning-light: rgba(217, 119, 6, 0.10);
-  --accent-warning-surface: rgba(217, 119, 6, 0.06);
+  /* Liquidity Emerald (Success) */
+  --accent-success: #0C8258;
+  --accent-success-hover: #086644;
+  --accent-success-light: rgba(12, 130, 88, 0.10);
+  --accent-success-surface: rgba(12, 130, 88, 0.05);
 
-  --accent-danger: #DC2626;
-  --accent-danger-light: rgba(220, 38, 38, 0.10);
-  --accent-danger-surface: rgba(220, 38, 38, 0.06);
+  /* Vigilance Amber (Warning) */
+  --accent-warning: #C07402;
+  --accent-warning-hover: #9E5E00;
+  --accent-warning-light: rgba(192, 116, 2, 0.10);
+  --accent-warning-surface: rgba(192, 116, 2, 0.05);
 
-  --accent-gold: #CA8A04;
-  --accent-gold-light: rgba(202, 138, 4, 0.10);
+  /* Risk Crimson (Danger) */
+  --accent-danger: #C52222;
+  --accent-danger-hover: #A01818;
+  --accent-danger-light: rgba(197, 34, 34, 0.10);
+  --accent-danger-surface: rgba(197, 34, 34, 0.05);
 
-  /* ── Shadows ── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.10), 0 4px 16px rgba(0, 0, 0, 0.06);
-  --shadow-glow-primary: 0 0 0 3px rgba(37, 99, 235, 0.18);
-  --shadow-glow-success: 0 0 0 3px rgba(5, 150, 105, 0.18);
-  --shadow-glow-danger: 0 0 0 3px rgba(220, 38, 38, 0.18);
+  /* ── Shadows: Layered Institutional Depth ── */
+  --shadow-sm: 0 1px 3px rgba(10, 25, 47, 0.04), 0 1px 2px rgba(10, 25, 47, 0.03);
+  --shadow-md: 0 4px 14px rgba(10, 25, 47, 0.06), 0 1px 4px rgba(10, 25, 47, 0.03);
+  --shadow-lg: 0 10px 30px rgba(10, 25, 47, 0.08), 0 2px 8px rgba(10, 25, 47, 0.03);
+  --shadow-xl: 0 20px 48px rgba(10, 25, 47, 0.11), 0 6px 16px rgba(10, 25, 47, 0.05);
+  --shadow-glow-primary: 0 0 0 3px rgba(15, 59, 115, 0.16);
+  --shadow-glow-gold: 0 0 0 3px rgba(197, 160, 89, 0.22);
+  --shadow-glow-success: 0 0 0 3px rgba(12, 130, 88, 0.16);
+  --shadow-glow-danger: 0 0 0 3px rgba(197, 34, 34, 0.16);
 
-  /* ── Typography ── */
-  --font-display: 'Cairo', sans-serif;
-  --font-body: 'IBM Plex Sans Arabic', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  /* ── Typography: Alexandria + IBM Plex Sans Arabic + Plus Jakarta Sans ── */
+  --font-display: 'Alexandria', sans-serif;
+  --font-body: 'Alexandria', 'IBM Plex Sans Arabic', sans-serif;
+  --font-mono: 'Plus Jakarta Sans', 'IBM Plex Mono', monospace;
 
   --text-xs: 0.75rem;    /* 12px */
   --text-sm: 0.875rem;   /* 14px */
@@ -64,13 +76,14 @@
   --text-4xl: 2.25rem;   /* 36px */
 
   --leading-tight: 1.25;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.75;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.8;
 
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
+  --weight-black: 800;
 
   /* ── Spacing ── */
   --space-1: 0.25rem;   /* 4px */
@@ -85,18 +98,18 @@
   --space-16: 4rem;     /* 64px */
 
   /* ── Border Radius ── */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm: 7px;
+  --radius-md: 11px;
+  --radius-lg: 15px;
+  --radius-xl: 22px;
   --radius-full: 9999px;
 
   /* ── Transitions ── */
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --duration-fast: 150ms;
-  --duration-normal: 250ms;
-  --duration-slow: 400ms;
+  --duration-normal: 240ms;
+  --duration-slow: 380ms;
 
   /* ── Z-index ── */
   --z-dropdown: 100;
@@ -106,62 +119,69 @@
   --z-toast: 500;
 
   /* ── Chart Colors ── */
-  --chart-good: #059669;
-  --chart-average: #D97706;
-  --chart-poor: #DC2626;
-  --chart-grid: rgba(107, 112, 137, 0.12);
-  --chart-text: #6B7089;
+  --chart-good: #0C8258;
+  --chart-average: #C07402;
+  --chart-poor: #C52222;
+  --chart-grid: rgba(74, 85, 104, 0.12);
+  --chart-text: #4A5568;
 }
 
-/* ── Dark Mode ── */
+/* ── Royal Banking Dark Mode (Midnight Vault) ── */
 [data-theme="dark"] {
-  --bg-primary: #0B0D14;
-  --bg-secondary: #12141D;
-  --bg-surface: #181B28;
-  --bg-surface-hover: #1F2336;
-  --bg-surface-elevated: #1F2336;
-  --bg-overlay: rgba(0, 0, 0, 0.60);
+  --bg-primary: #060C17;
+  --bg-secondary: #0B1526;
+  --bg-surface: #101E35;
+  --bg-surface-hover: #162744;
+  --bg-surface-elevated: #15243E;
+  --bg-overlay: rgba(0, 0, 0, 0.70);
 
-  --text-primary: #E8EAF0;
-  --text-secondary: #8B90A7;
-  --text-tertiary: #5C6179;
-  --text-inverse: #0B0D14;
+  --text-primary: #F0F4FA;
+  --text-secondary: #97A6BD;
+  --text-tertiary: #657590;
+  --text-inverse: #060C17;
 
-  --border-default: #282C3E;
-  --border-subtle: #1F2336;
-  --border-focus: #4B83F0;
+  --border-default: #1C2E4C;
+  --border-subtle: #14233D;
+  --border-focus: #5A95E8;
+  --border-gold: rgba(229, 195, 120, 0.4);
 
-  --accent-primary: #4B83F0;
-  --accent-primary-hover: #6B9DF5;
-  --accent-primary-light: rgba(75, 131, 240, 0.14);
-  --accent-primary-surface: rgba(75, 131, 240, 0.08);
+  --accent-primary: #3B82F6;
+  --accent-primary-hover: #60A5FA;
+  --accent-primary-light: rgba(59, 130, 246, 0.16);
+  --accent-primary-surface: rgba(59, 130, 246, 0.08);
+
+  --accent-gold: #E5C378;
+  --accent-gold-hover: #F0D495;
+  --accent-gold-light: rgba(229, 195, 120, 0.16);
+  --accent-gold-surface: rgba(229, 195, 120, 0.08);
 
   --accent-success: #10B981;
-  --accent-success-light: rgba(16, 185, 129, 0.14);
+  --accent-success-hover: #34D399;
+  --accent-success-light: rgba(16, 185, 129, 0.16);
   --accent-success-surface: rgba(16, 185, 129, 0.08);
 
   --accent-warning: #F59E0B;
-  --accent-warning-light: rgba(245, 158, 11, 0.14);
+  --accent-warning-hover: #FBBF24;
+  --accent-warning-light: rgba(245, 158, 11, 0.16);
   --accent-warning-surface: rgba(245, 158, 11, 0.08);
 
   --accent-danger: #EF4444;
-  --accent-danger-light: rgba(239, 68, 68, 0.14);
+  --accent-danger-hover: #F87171;
+  --accent-danger-light: rgba(239, 68, 68, 0.16);
   --accent-danger-surface: rgba(239, 68, 68, 0.08);
 
-  --accent-gold: #EAB308;
-  --accent-gold-light: rgba(234, 179, 8, 0.14);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.20);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.30), 0 2px 8px rgba(0, 0, 0, 0.20);
-  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.25);
-  --shadow-glow-primary: 0 0 0 3px rgba(75, 131, 240, 0.22);
-  --shadow-glow-success: 0 0 0 3px rgba(16, 185, 129, 0.22);
-  --shadow-glow-danger: 0 0 0 3px rgba(239, 68, 68, 0.22);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.22);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.28);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.50), 0 6px 16px rgba(0, 0, 0, 0.35);
+  --shadow-glow-primary: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  --shadow-glow-gold: 0 0 0 3px rgba(229, 195, 120, 0.25);
+  --shadow-glow-success: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  --shadow-glow-danger: 0 0 0 3px rgba(239, 68, 68, 0.25);
 
   --chart-good: #10B981;
   --chart-average: #F59E0B;
   --chart-poor: #EF4444;
-  --chart-grid: rgba(139, 144, 167, 0.10);
-  --chart-text: #8B90A7;
+  --chart-grid: rgba(151, 166, 189, 0.10);
+  --chart-text: #97A6BD;
 }

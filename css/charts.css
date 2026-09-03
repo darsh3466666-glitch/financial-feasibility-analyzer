@@ -4,14 +4,16 @@
 
 .chart-container {
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  transition: box-shadow var(--duration-normal) var(--ease-default);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-normal) var(--ease-default);
 }
 
 .chart-container:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .chart-header {
