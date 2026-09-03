@@ -11,26 +11,22 @@ const Exporter = {
     const wb = XLSX.utils.book_new();
 
     // ═══ Sheet 1: جدول العملاء الشامل ═══
-    const clientsData = classifiedClients.map(c => ({
-      'اسم العميل': c.clientName,
-      'التصنيف': c.classLabel,
-      'إجمالي المبيعات': c.totalSales,
-      'رصيد أول المدة': c.openingBalance,
-      'رصيد آخر المدة': c.closingBalance,
-      'متوسط المدينين': c.avgReceivables,
-      'معدل الدوران': c.arTurnover,
-      'معدل الدوران السنوي': c.annualizedTurnover,
-      'أيام التحصيل (DSO)': c.dso,
-      'معدل التحصيل %': c.collectionRate,
-      'العائد على المديونية %': c.returnOnAR,
-      'مؤشر الجدوى %': c.feasibilityIndex,
-      'الجدوى': c.isFeasible ? 'مُجدي' : 'غير مُجدي',
-      'تكلفة الفرصة البديلة': c.opportunityCost,
-      'تكلفة التمويل': c.financingCost,
-      'علاوة المخاطر %': c.riskPremium,
-      'عدد الفواتير': c.transactionCount,
-      'فترة التحليل (أيام)': c.periodDays
-    }));
+    const clientsData = classifiedClients.map(c => {
+      const isCash = (!c.avgReceivables || c.avgReceivables === 0 || c.dso === 0);
+      return {
+        'اسم العميل': c.clientName,
+        'التصنيف': c.classLabel,
+        'إجمالي المبيعات': c.totalSales,
+        'رصيد أول المدة': c.openingBalance,
+        'رصيد آخر المدة': c.closingBalance,
+        'متوسط المدينين': c.avgReceivables,
+        'معدل الدوران السنوي': isCash ? 'نقدي ∞' : c.annualizedTurnover,
+        'أيام التحصيل (DSO)': isCash ? '0 (سداد فوري)' : c.dso,
+        'معدل التحصيل %': c.collectionRate,
+        'عدد الفواتير': c.transactionCount,
+        'فترة التحليل (أيام)': c.periodDays
+      };
+    });
 
     const ws1 = XLSX.utils.json_to_sheet(clientsData);
     XLSX.utils.book_append_sheet(wb, ws1, 'تحليل العملاء الشامل');
@@ -51,9 +47,7 @@ const Exporter = {
         'نسبة المبيعات %': data.salesPercentage,
         'إجمالي المديونيات': data.totalReceivables,
         'نسبة المديونيات %': data.receivablesPercentage,
-        'متوسط DSO': data.avgDSO,
-        'متوسط العائد على AR %': data.avgReturnOnAR,
-        'عدد المُجديين': data.feasibleCount
+        'متوسط DSO': data.avgDSO
       });
     }
 
@@ -68,33 +62,14 @@ const Exporter = {
         'أيام التحصيل': p.dso,
         'السعر النقدي': p.cashPrice,
         'تكلفة التمويل %': p.financingCostPct,
-        'علاوة المخاطر %': p.riskPremiumPct,
         'إجمالي الزيادة %': p.totalMarkupPct,
         'السعر المقترح': p.suggestedPrice,
-        'فرق السعر': p.priceDifference,
-        'تكلفة التمويل (جنيه)': p.financingCostEGP
+        'فرق السعر': p.priceDifference
       }));
 
       const ws3 = XLSX.utils.json_to_sheet(pricingData);
       XLSX.utils.book_append_sheet(wb, ws3, 'محرك التسعير');
     }
-
-    // ═══ Sheet 4: مؤشر الجدوى ═══
-    const feasibilityData = classifiedClients.map(c => ({
-      'اسم العميل': c.clientName,
-      'التصنيف': c.classLabel,
-      'هامش الربح %': c.grossMargin,
-      'معدل الدوران السنوي': c.annualizedTurnover,
-      'العائد على المديونية %': c.returnOnAR,
-      'الحد الأدنى المقبول %': c.hurdleRate,
-      'مؤشر الجدوى %': c.feasibilityIndex,
-      'الجدوى': c.isFeasible ? 'مُجدي' : 'غير مُجدي',
-      'تكلفة الفرصة البديلة (جنيه)': c.opportunityCost,
-      'تكلفة التمويل (جنيه)': c.financingCost
-    }));
-
-    const ws4 = XLSX.utils.json_to_sheet(feasibilityData);
-    XLSX.utils.book_append_sheet(wb, ws4, 'مؤشر الجدوى');
 
     // ═══ Sheet 5: أعمار الديون ═══
     const agingData = classifiedClients.map(c => ({

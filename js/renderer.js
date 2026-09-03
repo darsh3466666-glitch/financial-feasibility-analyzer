@@ -279,6 +279,11 @@ const Renderer = {
         let valA = a[sortConfig.key];
         let valB = b[sortConfig.key];
 
+        if (sortConfig.key === 'annualizedTurnover') {
+          if (!a.avgReceivables || a.avgReceivables === 0 || a.dso === 0) valA = Infinity;
+          if (!b.avgReceivables || b.avgReceivables === 0 || b.dso === 0) valB = Infinity;
+        }
+
         if (typeof valA === 'string') {
           return sortConfig.dir === 'asc'
             ? valA.localeCompare(valB, 'ar')
@@ -289,20 +294,26 @@ const Renderer = {
       });
     }
 
-    container.innerHTML = sorted.map((client, index) => `
+    container.innerHTML = sorted.map((client, index) => {
+      const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0);
+      const turnoverText = isCash ? 'نقدي ∞' : formatNumber(client.annualizedTurnover, 1);
+      const dsoText = isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`;
+
+      return `
       <tr class="animate-in" style="animation-delay: ${Math.min(index * 30, 300)}ms">
         <td class="client-name" data-client="${escapeHTML(client.clientName)}" onclick="App.showClientDetail('${escapeHTML(client.clientName)}')" title="اضغط لعرض التفاصيل">
           ${escapeHTML(client.clientName)}
         </td>
         <td class="num-cell">${formatNumber(client.totalSales)}</td>
         <td class="num-cell">${formatNumber(client.avgReceivables)}</td>
-        <td class="num-cell">${formatNumber(client.annualizedTurnover, 1)}</td>
-        <td class="num-cell">${formatNumber(client.dso, 0)} يوم</td>
+        <td class="num-cell" style="${isCash ? 'color: var(--accent-success); font-weight: var(--weight-bold);' : ''}">${turnoverText}</td>
+        <td class="num-cell" style="${isCash ? 'color: var(--accent-success);' : ''}">${dsoText}</td>
         <td>
           <span class="badge badge-${client.classification}">${client.classLabel}</span>
         </td>
       </tr>
-    `).join('');
+      `;
+    }).join('');
   },
 
   /* ═══════════════════════════════════════════
@@ -314,6 +325,9 @@ const Renderer = {
 
     const recommendations = generateRecommendation(client);
     const aging = client.agingBuckets || {};
+    const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0);
+    const turnoverText = isCash ? 'نقدي ∞' : `${formatNumber(client.annualizedTurnover, 1)} مرة`;
+    const dsoText = isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`;
 
     document.getElementById('modal-client-name').textContent = client.clientName;
 
@@ -342,11 +356,11 @@ const Renderer = {
         </div>
         <div class="client-detail-item">
           <span class="detail-label">معدل الدوران السنوي</span>
-          <span class="detail-value">${formatNumber(client.annualizedTurnover, 1)} مرة</span>
+          <span class="detail-value" style="${isCash ? 'color: var(--accent-success); font-weight: var(--weight-bold);' : ''}">${turnoverText}</span>
         </div>
         <div class="client-detail-item">
           <span class="detail-label">متوسط أيام التحصيل (DSO)</span>
-          <span class="detail-value">${formatNumber(client.dso, 0)} يوم</span>
+          <span class="detail-value" style="${isCash ? 'color: var(--accent-success);' : ''}">${dsoText}</span>
         </div>
         <div class="client-detail-item">
           <span class="detail-label">معدل التحصيل</span>
