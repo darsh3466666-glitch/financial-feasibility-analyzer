@@ -71,18 +71,18 @@ const Renderer = {
         <div class="kpi-icon">
           <svg class="icon"><use href="#wallet"></use></svg>
         </div>
-        <span class="kpi-label">متوسط رصيد المديونية</span>
+        <span class="kpi-label">إجمالي متوسط حسابات المدينين</span>
         <span class="kpi-value">${formatNumber(summary.totalReceivables)}</span>
-        <span class="kpi-sub">إجمالي متوسط المديونيات خلال الفترة (جنيه)</span>
+        <span class="kpi-sub">إجمالي متوسط رصيد السوق لكافة العملاء (جنيه)</span>
       </div>
 
       <div class="kpi-card kpi-card--success animate-in">
         <div class="kpi-icon">
           <svg class="icon"><use href="#refresh"></use></svg>
         </div>
-        <span class="kpi-label">متوسط معدل الدوران</span>
+        <span class="kpi-label">معدل دوران المديونية السنوي</span>
         <span class="kpi-value">${formatNumber(summary.avgTurnover, 1)}</span>
-        <span class="kpi-sub">مرة سنوياً</span>
+        <span class="kpi-sub">مرة سنوياً (متوافق مع متوسط سداد ${formatNumber(summary.avgDSO, 0)} يوم)</span>
       </div>
 
     `;

@@ -490,9 +490,11 @@ function calculateSummary(results, settings) {
   const totalReceivables = results.reduce((s, r) => s + r.avgReceivables, 0);
   const totalDebt = results.reduce((s, r) => s + r.closingBalance, 0); // إجمالي المديونية الفعلية (أرصدة آخر المدة)
   
-  const avgTurnover = totalReceivables > 0 ? totalSales / totalReceivables : 0;
   const periodDays = results.length > 0 ? results[0].periodDays : 365;
-  const avgDSO = avgTurnover > 0 ? periodDays / avgTurnover : 0;
+  const periodTurnover = totalReceivables > 0 ? totalSales / totalReceivables : 0;
+  const avgDSO = periodTurnover > 0 ? periodDays / periodTurnover : 0;
+  // معدل الدوران السنوي الإجمالي الحقيقي (معادل لـ 365 يوم) ليتطابق رياضياً مع أيام التحصيل:
+  const avgTurnover = avgDSO > 0 ? (365 / avgDSO) : (periodTurnover > 0 ? periodTurnover * (365 / periodDays) : 0);
   
   const avgRequiredMarkup = results.reduce((s, r) => s + r.requiredMarkup, 0) / totalClients;
   const avgCollectionRate = results.reduce((s, r) => s + r.collectionRate, 0) / totalClients;
