@@ -436,9 +436,15 @@ const App = {
 
     let filtered = [...this.state.classifiedClients];
 
-    // فلترة التصنيف
+    // فلترة التصنيف والجدوى
     if (this.state.filterClass !== 'all') {
-      filtered = filtered.filter(c => c.classification === this.state.filterClass);
+      if (this.state.filterClass === 'feasible') {
+        filtered = filtered.filter(c => c.isFeasible);
+      } else if (this.state.filterClass === 'not-feasible') {
+        filtered = filtered.filter(c => !c.isFeasible);
+      } else {
+        filtered = filtered.filter(c => c.classification === this.state.filterClass);
+      }
     }
 
     // البحث

@@ -11,11 +11,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/variables.css">
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/layout.css">
-  <link rel="stylesheet" href="css/charts.css">
+  <link rel="stylesheet" href="css/variables.css?v=2.7">
+  <link rel="stylesheet" href="css/base.css?v=2.7">
+  <link rel="stylesheet" href="css/components.css?v=2.7">
+  <link rel="stylesheet" href="css/layout.css?v=2.7">
+  <link rel="stylesheet" href="css/charts.css?v=2.7">
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
@@ -252,6 +252,8 @@
               <button class="filter-btn" data-filter="good">A ممتاز</button>
               <button class="filter-btn" data-filter="average">B عادي</button>
               <button class="filter-btn" data-filter="poor">C بطيء</button>
+              <button class="filter-btn" data-filter="feasible" style="color: var(--accent-success); font-weight: 600;">مُجدي</button>
+              <button class="filter-btn" data-filter="not-feasible" style="color: var(--accent-danger); font-weight: 600;">غير مُجدي</button>
             </div>
             <button class="btn btn-secondary" onclick="window.print()" style="gap: 6px; padding: 8px 16px;">
               <svg class="icon" style="width: 16px; height: 16px;"><use href="#printer"></use></svg>
@@ -427,15 +429,15 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 
   <!-- Application Scripts -->
-  <script src="js/excel-parser.js"></script>
-  <script src="js/calculator.js"></script>
-  <script src="js/classifier.js"></script>
-  <script src="js/pricing-engine.js"></script>
-  <script src="js/renderer.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/exporter.js"></script>
-  <script src="js/theme.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/excel-parser.js?v=2.7"></script>
+  <script src="js/calculator.js?v=2.7"></script>
+  <script src="js/classifier.js?v=2.7"></script>
+  <script src="js/pricing-engine.js?v=2.7"></script>
+  <script src="js/renderer.js?v=2.7"></script>
+  <script src="js/charts.js?v=2.7"></script>
+  <script src="js/exporter.js?v=2.7"></script>
+  <script src="js/theme.js?v=2.7"></script>
+  <script src="js/app.js?v=2.7"></script>
 
 </body>
 </html>
