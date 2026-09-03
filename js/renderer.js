@@ -284,6 +284,15 @@ const Renderer = {
           if (!b.avgReceivables || b.avgReceivables === 0 || b.dso === 0 || b.dso < 1 || b.annualizedTurnover >= 365) valB = Infinity;
         }
 
+        if (sortConfig.key === 'totalMarkupPct') {
+          valA = a.totalMarkupPct || 0;
+          valB = b.totalMarkupPct || 0;
+        }
+        if (sortConfig.key === 'suggestedPrice') {
+          valA = a.suggestedPrice || 0;
+          valB = b.suggestedPrice || 0;
+        }
+
         if (typeof valA === 'string') {
           return sortConfig.dir === 'asc'
             ? valA.localeCompare(valB, 'ar')
@@ -299,6 +308,16 @@ const Renderer = {
       const turnoverText = isCash ? 'نقدي ∞' : formatNumber(client.annualizedTurnover, 1);
       const dsoText = isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`;
 
+      const markupVal = isCash ? 0 : (client.totalMarkupPct || 0);
+      const markupText = isCash
+        ? '<span style="color: var(--accent-success); font-weight: 600;">0.0% (كاش)</span>'
+        : `<span style="color: ${markupVal > 5 ? 'var(--accent-danger)' : 'var(--accent-gold)'}; font-weight: 600;">+${formatPercent(markupVal)}</span>`;
+
+      const priceVal = (client.suggestedPrice && client.suggestedPrice > 0) ? client.suggestedPrice : (client.cashPrice || 0);
+      const priceText = isCash
+        ? `<span style="color: var(--accent-success); font-weight: 700;">${formatNumber(priceVal)} جنيه</span>`
+        : `<span style="color: var(--accent-gold); font-weight: 700;">${formatNumber(priceVal)} جنيه</span>`;
+
       return `
       <tr class="animate-in" style="animation-delay: ${Math.min(index * 30, 300)}ms">
         <td class="client-name" data-client="${escapeHTML(client.clientName)}" onclick="App.showClientDetail('${escapeHTML(client.clientName)}')" title="اضغط لعرض التفاصيل">
@@ -311,6 +330,8 @@ const Renderer = {
         <td>
           <span class="badge badge-${client.classification}">${client.classLabel}</span>
         </td>
+        <td class="num-cell">${markupText}</td>
+        <td class="num-cell">${priceText}</td>
       </tr>
       `;
     }).join('');
@@ -328,6 +349,7 @@ const Renderer = {
     const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365);
     const turnoverText = isCash ? 'نقدي ∞' : `${formatNumber(client.annualizedTurnover, 1)} مرة`;
     const dsoText = isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`;
+    const priceVal = (client.suggestedPrice && client.suggestedPrice > 0) ? client.suggestedPrice : (client.cashPrice || 0);
 
     document.getElementById('modal-client-name').textContent = client.clientName;
 
@@ -375,6 +397,16 @@ const Renderer = {
         <div class="client-detail-item">
           <span class="detail-label">فترة التحليل</span>
           <span class="detail-value">${formatNumber(client.periodDays)} يوم</span>
+        </div>
+        <div class="client-detail-item">
+          <span class="detail-label">السعر المقترح للوحدة</span>
+          <span class="detail-value" style="color: var(--accent-gold); font-weight: var(--weight-bold);">${formatNumber(priceVal)} جنيه</span>
+        </div>
+        <div class="client-detail-item">
+          <span class="detail-label">نسبة الزيادة المقترحة</span>
+          <span class="detail-value" style="color: ${isCash ? 'var(--accent-success)' : 'var(--accent-gold)'}; font-weight: 600;">
+            ${isCash ? '0.0% (سعر الكاش)' : `+${formatPercent(client.totalMarkupPct)}`}
+          </span>
         </div>
       </div>
 

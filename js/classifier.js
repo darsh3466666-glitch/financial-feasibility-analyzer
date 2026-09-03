@@ -179,5 +179,19 @@ function generateRecommendation(client) {
     );
   }
 
+  // ═══════ تسعير العميل المقترح الخاص بحالته ═══════
+  const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365);
+  const priceVal = (client.suggestedPrice && client.suggestedPrice > 0) ? client.suggestedPrice : (client.cashPrice || 0);
+
+  if (isCash) {
+    recommendations.push(
+      `💵 التسعير المقترح: يُباع له بسعر الكاش الأساسي (${formatNumber(priceVal)} جنيه/وحدة) بدون أي زيادة لالتزامه بالسداد الفوري.`
+    );
+  } else if (client.totalMarkupPct > 0) {
+    recommendations.push(
+      `🏷️ التسعير المقترح: السعر العادل للبيع له هو ${formatNumber(priceVal)} جنيه/وحدة (بزيادة +${formatPercent(client.totalMarkupPct)}) لتعويض تكلفة انتظار أموال الشركة لمدة ${formatNumber(client.dso, 0)} يوم.`
+    );
+  }
+
   return recommendations;
 }

@@ -22,6 +22,8 @@ const Exporter = {
         'متوسط المدينين': c.avgReceivables,
         'معدل الدوران السنوي': isCash ? 'نقدي ∞' : c.annualizedTurnover,
         'أيام التحصيل (DSO)': isCash ? '0 (سداد فوري)' : c.dso,
+        'نسبة الزيادة المقترحة %': isCash ? 0 : (c.totalMarkupPct || 0),
+        'السعر المقترح للوحدة (جنيه)': (c.suggestedPrice && c.suggestedPrice > 0) ? c.suggestedPrice : (c.cashPrice || 0),
         'معدل التحصيل %': c.collectionRate,
         'عدد الفواتير': c.transactionCount,
         'فترة التحليل (أيام)': c.periodDays

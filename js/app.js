@@ -394,6 +394,17 @@ const App = {
       });
       this.state.pricingReport = pricingReport;
 
+      // ربط بيانات التسعير الفردية الخاصة بكل عميل في بياناته مباشرة
+      classifiedClients.forEach((client, idx) => {
+        const p = pricingReport[idx];
+        if (p) {
+          client.suggestedPrice = p.suggestedPrice;
+          client.totalMarkupPct = p.totalMarkupPct;
+          client.priceDifference = p.priceDifference;
+          client.cashPrice = p.cashPrice;
+        }
+      });
+
       const pricingSummary = PricingEngine.generatePricingSummary(pricingReport);
       this.state.pricingSummary = pricingSummary;
 
