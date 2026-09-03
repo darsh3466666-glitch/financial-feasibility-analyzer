@@ -12,8 +12,17 @@ const Renderer = {
     const container = document.getElementById('kpi-grid');
     if (!container) return;
 
-    const feasiblePct = summary.totalClients > 0 ? (summary.feasibleCount / summary.totalClients) * 100 : 0;
-    const notFeasiblePct = summary.totalClients > 0 ? (summary.notFeasibleCount / summary.totalClients) * 100 : 0;
+    const totalClients = summary.totalClients || 0;
+    const feasiblePct = totalClients > 0 ? (summary.feasibleCount / totalClients) * 100 : 0;
+    const notFeasiblePct = totalClients > 0 ? (summary.notFeasibleCount / totalClients) * 100 : 0;
+
+    const goodCount = salesByClass?.good?.count || 0;
+    const avgCount = salesByClass?.average?.count || 0;
+    const poorCount = salesByClass?.poor?.count || 0;
+
+    const goodPct = totalClients > 0 ? (goodCount / totalClients) * 100 : 0;
+    const avgPct = totalClients > 0 ? (avgCount / totalClients) * 100 : 0;
+    const poorPct = totalClients > 0 ? (poorCount / totalClients) * 100 : 0;
     
     let dsoEval = '';
     if (summary.avgDSO <= 30) dsoEval = 'جيد جداً (دورة سريعة)';
@@ -26,8 +35,18 @@ const Renderer = {
           <svg class="icon"><use href="#users"></use></svg>
         </div>
         <span class="kpi-label">إجمالي العملاء</span>
-        <span class="kpi-value">${formatNumber(summary.totalClients)}</span>
-        <span class="kpi-sub">إجمالي عدد حسابات العملاء المسجلة</span>
+        <span class="kpi-value">${formatNumber(totalClients)}</span>
+        <div style="margin-top: 8px; width: 100%; border-top: 1px solid var(--border-default); padding-top: 6px; font-size: 0.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="color: var(--accent-success); font-weight: 600;">مُجدي: ${formatNumber(summary.feasibleCount)} (${formatPercent(feasiblePct)})</span>
+            <span style="color: var(--accent-danger); font-weight: 600;">غير مُجدي: ${formatNumber(summary.notFeasibleCount)} (${formatPercent(notFeasiblePct)})</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-secondary); font-size: 0.72rem;">
+            <span><strong style="color: var(--accent-success);">A:</strong> ${formatNumber(goodCount)} (${formatPercent(goodPct)})</span>
+            <span><strong style="color: var(--accent-warning);">B:</strong> ${formatNumber(avgCount)} (${formatPercent(avgPct)})</span>
+            <span><strong style="color: var(--accent-danger);">C:</strong> ${formatNumber(poorCount)} (${formatPercent(poorPct)})</span>
+          </div>
+        </div>
       </div>
 
       <div class="kpi-card kpi-card--gold animate-in">
