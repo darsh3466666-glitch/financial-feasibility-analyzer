@@ -280,8 +280,8 @@ const Renderer = {
         let valB = b[sortConfig.key];
 
         if (sortConfig.key === 'annualizedTurnover') {
-          if (!a.avgReceivables || a.avgReceivables === 0 || a.dso === 0) valA = Infinity;
-          if (!b.avgReceivables || b.avgReceivables === 0 || b.dso === 0) valB = Infinity;
+          if (!a.avgReceivables || a.avgReceivables === 0 || a.dso === 0 || a.dso < 1 || a.annualizedTurnover >= 365) valA = Infinity;
+          if (!b.avgReceivables || b.avgReceivables === 0 || b.dso === 0 || b.dso < 1 || b.annualizedTurnover >= 365) valB = Infinity;
         }
 
         if (typeof valA === 'string') {
@@ -295,7 +295,7 @@ const Renderer = {
     }
 
     container.innerHTML = sorted.map((client, index) => {
-      const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0);
+      const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365);
       const turnoverText = isCash ? 'نقدي ∞' : formatNumber(client.annualizedTurnover, 1);
       const dsoText = isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`;
 
@@ -325,7 +325,7 @@ const Renderer = {
 
     const recommendations = generateRecommendation(client);
     const aging = client.agingBuckets || {};
-    const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0);
+    const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365);
     const turnoverText = isCash ? 'نقدي ∞' : `${formatNumber(client.annualizedTurnover, 1)} مرة`;
     const dsoText = isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`;
 

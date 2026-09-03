@@ -120,27 +120,41 @@ function calculateClientMetrics(clientName, records, settings) {
     if (inferred > 0) totalPayments = inferred;
   }
 
-  // متوسط المدينين
-  const avgReceivables = (openingBalance + closingBalance) / 2;
+  // متوسط المدينين وفق المعايير المالية الحديثة (متوسط الرصيد اليومي المرجح بالزمن)
+  const avgReceivables = calculateAverageReceivables(
+    sorted,
+    openingBalance,
+    closingBalance,
+    totalSales,
+    periodDays,
+    settings.globalStartDate,
+    settings.globalEndDate
+  );
 
-  // معدل دوران المديونية (AR Turnover)
+  // حساب أيام التحصيل (DSO) ومعدل الدوران وفق المعايير المالية المعتمدة:
   let arTurnover = 0;
-  if (avgReceivables > 0) {
-    arTurnover = totalSales / avgReceivables;
-  } else if (totalSales > 0 && avgReceivables === 0) {
-    // بيع نقدي فوري: الدوران مثالي وفوري
-    arTurnover = 365;
-  }
-
-  // تحويل معدل الدوران للسنوي
-  const annualizedTurnover = arTurnover * (365 / periodDays);
-
-  // متوسط أيام التحصيل (DSO)
   let dso = 0;
-  if (avgReceivables > 0 && arTurnover > 0) {
+  let annualizedTurnover = 0;
+
+  if (totalSales > 0 && avgReceivables > 0) {
+    arTurnover = totalSales / avgReceivables;
     dso = periodDays / arTurnover;
+
+    // المعايير المالية: إذا كانت فترة التحصيل أقل من يوم واحد (dso < 1)،
+    // فهذا سداد نقدي فوري بالكامل (DSO = 0، والدوران نقدي فوري):
+    if (dso < 1) {
+      dso = 0;
+      arTurnover = 365;
+      annualizedTurnover = 365;
+    } else {
+      dso = roundTo(dso, 1);
+      annualizedTurnover = roundTo(365 / dso, 1);
+    }
   } else {
-    dso = 0; // سداد نقدي فوري = 0 يوم تأخير
+    // بيع نقدي فوري بالكامل
+    dso = 0;
+    arTurnover = 365;
+    annualizedTurnover = 365;
   }
 
   // معدل التحصيل (Collection Rate)
@@ -361,6 +375,78 @@ function getClosingBalance(sortedRecords) {
     }
   }
   return 0;
+}
+
+/**
+ * حساب متوسط رصيد المدينين وفق المعايير المالية الحديثة (CMA / IFRS / البنوك)
+ * يستخدم متوسط الرصيد اليومي المرجح بالزمن (Time-Weighted Daily Average Balance)
+ * لتفادي تشوه النسب عند تصفية الحسابات في نهاية الفترة أو وجود مبالغ فكة متبقية.
+ */
+function calculateAverageReceivables(sortedRecords, openingBalance, closingBalance, totalSales, periodDays, startDate, endDate) {
+  // تصفية السجلات ذات التواريخ الصالحة
+  const validDated = sortedRecords.filter(r => r.date instanceof Date && !isNaN(r.date.getTime()));
+
+  if (validDated.length > 0 && startDate && endDate && periodDays > 0) {
+    let currentBalance = openingBalance;
+    let totalWeightedBalance = 0;
+    let lastTime = (startDate instanceof Date ? startDate : new Date(startDate)).getTime();
+    const endTime = (endDate instanceof Date ? endDate : new Date(endDate)).getTime();
+
+    // فرز المعاملات زمنياً
+    const dateSorted = [...validDated].sort((a, b) => a.date - b.date);
+
+    for (const r of dateSorted) {
+      const txTime = Math.min(Math.max(r.date.getTime(), lastTime), endTime);
+      const daysDiff = (txTime - lastTime) / (1000 * 60 * 60 * 24);
+
+      if (daysDiff > 0) {
+        totalWeightedBalance += Math.max(0, currentBalance) * daysDiff;
+        lastTime = txTime;
+      }
+
+      // تحديث الرصيد بعد الحركة
+      if (r.balance !== null && r.balance !== undefined && !isNaN(r.balance)) {
+        currentBalance = Math.abs(r.balance);
+      } else {
+        const inv = r.invoiceAmount || 0;
+        const pay = r.paymentAmount || 0;
+        currentBalance = Math.max(0, currentBalance + inv - pay);
+      }
+    }
+
+    // الفترة من تاريخ آخر حركة حتى نهاية الفترة المالية
+    const remainingDays = Math.max(0, (endTime - lastTime) / (1000 * 60 * 60 * 24));
+    totalWeightedBalance += Math.max(0, currentBalance) * remainingDays;
+
+    const timeWeightedAvg = totalWeightedBalance / periodDays;
+    if (timeWeightedAvg > 0) {
+      return roundTo(timeWeightedAvg, 2);
+    }
+  }
+
+  // إذا لم تتوفر تواريخ دقيقة ولكن توجد معاملات متعددة:
+  if (sortedRecords.length > 1) {
+    let running = openingBalance;
+    let sumRunning = 0;
+    let count = 0;
+
+    for (const r of sortedRecords) {
+      if (r.balance !== null && r.balance !== undefined && !isNaN(r.balance)) {
+        running = Math.abs(r.balance);
+      } else {
+        running = Math.max(0, running + (r.invoiceAmount || 0) - (r.paymentAmount || 0));
+      }
+      sumRunning += running;
+      count++;
+    }
+
+    if (count > 0 && (sumRunning / count) > 0) {
+      return roundTo(sumRunning / count, 2);
+    }
+  }
+
+  // الطريقة التقليدية (متوسط رصيد أول وآخر المدة):
+  return roundTo((openingBalance + closingBalance) / 2, 2);
 }
 
 /**
