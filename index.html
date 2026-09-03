@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>محلل الجدوى التجارية والتحليل المالي للعملاء</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/charts.css">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+</head>
+<body>
+  <!-- Inline SVG Sprite (required for file:// protocol compatibility) -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+    <symbol id="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
+    <symbol id="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+    <symbol id="download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+    <symbol id="users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></symbol>
+    <symbol id="banknotes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M2 10h2"/><path d="M20 10h2"/><path d="M2 14h2"/><path d="M20 14h2"/></symbol>
+    <symbol id="refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></symbol>
+    <symbol id="trending-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+    <symbol id="check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+    <symbol id="x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
+    <symbol id="info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+    <symbol id="search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="bar-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></symbol>
+    <symbol id="file-spreadsheet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="10" y2="21"/></symbol>
+    <symbol id="arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></symbol>
+    <symbol id="arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></symbol>
+    <symbol id="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    <symbol id="file-pdf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 12h1.5a1.5 1.5 0 0 1 0 3H10v3"/><path d="M7 12v6"/></symbol>
+    <symbol id="alert-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+    <symbol id="analytics" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21H4a1 1 0 0 1-1-1V3"/><path d="m7 14 4-4 4 4 6-6"/></symbol>
+    <symbol id="table" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></symbol>
+    <symbol id="tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></symbol>
+    <symbol id="layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+    <symbol id="target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="percent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></symbol>
+    <symbol id="shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  </svg>
+
+  <div class="app">
+    <!-- ══════════════════ Header ══════════════════ -->
+    <header class="app-header">
+      <div class="app-logo">
+        <div class="logo-icon">
+          <svg class="icon"><use href="#analytics"></use></svg>
+        </div>
+        <h1>محلل الجدوى التجارية</h1>
+      </div>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn btn-ghost btn-icon" aria-label="تبديل الوضع الليلي/النهاري">
+          <svg class="icon icon-sun" style="width:20px;height:20px;display:none"><use href="#sun"></use></svg>
+          <svg class="icon icon-moon" style="width:20px;height:20px"><use href="#moon"></use></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ══════════════════ Main Content ══════════════════ -->
+    <main class="app-main">
+
+      <!-- ──── Macro Settings Panel ──── -->
+      <section class="settings-panel section" id="settings-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <svg class="icon"><use href="#settings"></use></svg>
+            الإعدادات الكلية (Macro Settings)
+          </h2>
+        </div>
+
+        <div class="settings-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+          <!-- ═══ السعر النقدي المرجعي ═══ -->
+          <div class="form-group" style="padding: var(--space-4); background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); text-align: center;">
+            <label class="form-label" for="cash-price" style="justify-content: center; font-size: var(--text-base); margin-bottom: var(--space-4);">
+              <svg class="icon" style="width:20px;height:20px;vertical-align:middle;color:var(--accent-primary)"><use href="#tag"></use></svg>
+              السعر النقدي الحالي للوحدة (الكاش)
+            </label>
+            <div class="input-group" style="height: 48px; max-width: 200px; margin: 0 auto;">
+              <span class="input-suffix">جنيه</span>
+              <input type="number" id="cash-price" class="form-input" value="20000" min="0" step="100" style="font-size: 1.2rem; text-align: center;">
+            </div>
+            <span class="form-hint" style="margin-top: var(--space-3); line-height: 1.6;">
+              السعر الأساسي الذي يبنى عليه محرك التسعير الآجل
+            </span>
+          </div>
+
+          <!-- ═══ أسعار الفائدة ═══ -->
+          <div class="form-group" style="padding: var(--space-4); background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); text-align: center;">
+            <label class="form-label" for="deposit-rate" style="justify-content: center; font-size: var(--text-base); margin-bottom: var(--space-4);">
+              <svg class="icon" style="width:20px;height:20px;vertical-align:middle;color:var(--accent-primary)"><use href="#shield"></use></svg>
+              سعر عائد الإيداع البنكي (تكلفة الفرصة البديلة)
+            </label>
+            <div class="input-group" style="height: 48px; max-width: 200px; margin: 0 auto;">
+              <span class="input-suffix">%</span>
+              <input type="number" id="deposit-rate" class="form-input" value="19" min="0" max="100" step="0.25" placeholder="19" style="font-size: 1.2rem; text-align: center;">
+            </div>
+            <span class="form-hint" style="margin-top: var(--space-3); line-height: 1.6;">
+              أدخل معدل الفائدة السنوي في حال إيداع الأموال في البنك.
+            </span>
+          </div>
+
+          <!-- ═══ فترة التحليل ═══ -->
+          <div class="form-group" style="padding: var(--space-4); background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); text-align: center;">
+            <label class="form-label" for="period-type" style="justify-content: center; font-size: var(--text-base); margin-bottom: var(--space-4);">
+              <svg class="icon" style="width:20px;height:20px;vertical-align:middle;color:var(--accent-primary)"><use href="#clock"></use></svg>
+              فترة التحليل الإجمالية
+            </label>
+            <div style="display: flex; flex-direction: column; gap: 12px; align-items: center;">
+              <select id="period-type" class="form-input form-select" style="height: 48px; font-size: 1rem; width: 100%;">
+                <option value="auto" selected>تلقائي من الفواتير</option>
+                <option value="365">سنة كاملة (365 يوم)</option>
+                <option value="180">نصف سنة (180 يوم)</option>
+                <option value="90">ربع سنة (90 يوم)</option>
+                <option value="custom">فترة مخصصة</option>
+              </select>
+              
+              <!-- حقول التاريخ المخصصة -->
+              <div id="custom-dates-container" style="display: none; gap: 12px; justify-content: center; width: 100%;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                  <label style="font-size: 0.85rem; color: var(--text-secondary);">من تاريخ</label>
+                  <input type="date" id="custom-start-date" class="form-input" style="height: 40px; font-size: 0.95rem; text-align: center; width: 140px;" lang="en-GB">
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                  <label style="font-size: 0.85rem; color: var(--text-secondary);">إلى تاريخ</label>
+                  <input type="date" id="custom-end-date" class="form-input" style="height: 40px; font-size: 0.95rem; text-align: center; width: 140px;" lang="en-GB">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ──── Upload Section ──── -->
+      <section class="section" id="upload-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <svg class="icon"><use href="#file-spreadsheet"></use></svg>
+            رفع ملفات البيانات
+          </h2>
+        </div>
+
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="file-input" accept=".xlsx,.xls,.csv" multiple>
+          <svg class="upload-icon"><use href="#upload"></use></svg>
+          <div class="upload-title">اسحب الملفات هنا أو اضغط للاختيار</div>
+          <div class="upload-subtitle">يمكنك رفع ملف واحد أو عدة ملفات — سيتم دمج البيانات تلقائياً</div>
+          <span class="upload-btn">
+            <svg class="icon" style="width:16px;height:16px"><use href="#upload"></use></svg>
+            اختيار الملفات
+          </span>
+          <div class="upload-formats">الصيغ المدعومة: .xlsx, .xls, .csv</div>
+        </div>
+
+        <div id="file-chips" class="file-chips"></div>
+      </section>
+
+      <!-- ──── Column Mapping Section ──── -->
+      <section class="section section-hidden" id="mapping-section">
+        <div class="card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg class="icon"><use href="#table"></use></svg>
+              ربط الأعمدة
+            </h3>
+          </div>
+          <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-4);">
+            سنلتقط اسم العميل والمبيعات والرصيد تلقائياً. افتح التعديل اليدوي فقط إذا كان الاكتشاف غير صحيح.
+          </p>
+
+          <div id="mapping-content"></div>
+
+          <div style="margin-top: var(--space-6); text-align: center;">
+            <button id="btn-analyze" class="btn btn-primary btn-lg">
+              <svg class="icon"><use href="#analytics"></use></svg>
+              بدء التحليل الشامل
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════ Results Area ══════════════════ -->
+      <div id="results-area">
+
+        <!-- ──── KPI Dashboard ──── -->
+        <section class="section results-section section-hidden" id="kpi-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <svg class="icon"><use href="#bar-chart"></use></svg>
+              لوحة المؤشرات الرئيسية
+            </h2>
+          </div>
+          <div class="kpi-grid" id="kpi-grid"></div>
+        </section>
+
+        <!-- ──── Feasibility Dashboard ──── -->
+        <section class="section results-section section-hidden" id="feasibility-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <svg class="icon"><use href="#target"></use></svg>
+              مؤشر الجدوى وتكلفة الفرصة البديلة
+            </h2>
+          </div>
+          <div id="feasibility-content"></div>
+        </section>
+
+        <!-- ──── Aging Report ──── -->
+        <section class="section results-section section-hidden" id="aging-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <svg class="icon"><use href="#layers"></use></svg>
+              تقرير أعمار الديون (Aging)
+            </h2>
+          </div>
+          <div id="aging-content"></div>
+        </section>
+
+        <!-- ──── Sales Analysis by Classification ──── -->
+        <section class="section results-section section-hidden" id="sales-analysis-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <svg class="icon"><use href="#trending-up"></use></svg>
+              تحليل المبيعات حسب التصنيف
+            </h2>
+          </div>
+          <div class="card" id="sales-analysis-content"></div>
+        </section>
+
+        <!-- ──── Clients Table ──── -->
+        <section class="section results-section section-hidden" id="table-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <svg class="icon"><use href="#users"></use></svg>
+              جدول العملاء التفصيلي
+            </h2>
+            <span id="results-count" style="font-size: var(--text-sm); color: var(--text-secondary);"></span>
+          </div>
+
+          <!-- Table Controls -->
+          <div class="table-controls">
+            <div class="table-search">
+              <svg class="search-icon"><use href="#search"></use></svg>
+              <input type="text" id="table-search" class="form-input" placeholder="بحث باسم العميل...">
+            </div>
+            <div class="table-filters">
+              <button class="filter-btn active" data-filter="all">الكل</button>
+              <button class="filter-btn" data-filter="good">A ممتاز</button>
+              <button class="filter-btn" data-filter="average">B عادي</button>
+              <button class="filter-btn" data-filter="poor">C بطيء</button>
+            </div>
+            <button class="btn btn-secondary" onclick="window.print()" style="gap: 6px; padding: 8px 16px;">
+              <svg class="icon" style="width: 16px; height: 16px;"><use href="#printer"></use></svg>
+              طباعة التقرير
+            </button>
+          </div>
+
+          <div class="data-table-wrapper" style="max-height: 500px; overflow-y: auto;">
+            <table class="data-table" id="clients-table">
+              <thead>
+                <tr>
+                  <th data-sort="clientName">
+                    اسم العميل
+                    <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
+                  </th>
+                  <th data-sort="totalSales">
+                    إجمالي المبيعات
+                    <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
+                  </th>
+                  <th data-sort="avgReceivables">
+                    متوسط المدينين
+                    <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
+                  </th>
+                  <th data-sort="annualizedTurnover">
+                    معدل الدوران
+                    <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
+                  </th>
+                  <th data-sort="dso">
+                    أيام التحصيل
+                    <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
+                  </th>
+                  <th data-sort="qualityScore">
+                    نقاط الجودة
+                    <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
+                  </th>
+                  <th data-sort="hiddenLossPct">
+                    الخسارة الخفية
+                    <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
+                  </th>
+                  <th data-sort="classification">
+                    التصنيف
+                    <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
+                  </th>
+                  <th data-sort="isFeasible">
+                    الجدوى
+                    <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="clients-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ──── Pricing Engine ──── -->
+        <section class="section results-section section-hidden" id="pricing-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <svg class="icon"><use href="#tag"></use></svg>
+              محرك التسعير الديناميكي
+            </h2>
+          </div>
+          <div id="pricing-content"></div>
+        </section>
+
+        <!-- ──── Charts ──── -->
+        <section class="section results-section section-hidden" id="charts-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              <svg class="icon"><use href="#bar-chart"></use></svg>
+              الرسوم البيانية
+            </h2>
+          </div>
+
+          <div class="charts-grid">
+            <!-- DSO Bar Chart -->
+            <div class="chart-container">
+              <div class="chart-header">
+                <span class="chart-title">أعلى 15 عميل في أيام التحصيل</span>
+                <span class="chart-subtitle">مرتبين من الأعلى للأقل</span>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="chart-dso"></canvas>
+              </div>
+            </div>
+
+            <!-- Feasibility Scatter -->
+            <div class="chart-container">
+              <div class="chart-header">
+                <span class="chart-title">مؤشر الجدوى مقابل أيام التحصيل</span>
+                <span class="chart-subtitle">النقاط فوق الخط الأحمر = مُجدي اقتصادياً</span>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="chart-feasibility-scatter"></canvas>
+              </div>
+            </div>
+
+            <!-- Aging Stacked Bar -->
+            <div class="chart-container">
+              <div class="chart-header">
+                <span class="chart-title">أعمار الديون حسب التصنيف</span>
+                <span class="chart-subtitle">توزيع المبالغ المستحقة حسب عمر الدين</span>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="chart-aging"></canvas>
+              </div>
+            </div>
+
+            <!-- Feasibility Comparison -->
+            <div class="chart-container">
+              <div class="chart-header">
+                <span class="chart-title">مقارنة العائد على المديونية مع الحد الأدنى المقبول</span>
+                <span class="chart-subtitle">أعلى 15 عميل من حيث الزيادة المطلوبة</span>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="chart-feasibility"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ──── Export Actions ──── -->
+        <section class="section results-section section-hidden" id="export-section">
+          <div class="export-actions">
+            <button id="btn-export-excel" class="btn btn-success btn-lg">
+              <svg class="icon"><use href="#download"></use></svg>
+              تصدير Excel شامل
+            </button>
+            <button id="btn-export-pdf" class="btn btn-secondary btn-lg">
+              <svg class="icon"><use href="#file-pdf"></use></svg>
+              تصدير PDF
+            </button>
+          </div>
+        </section>
+
+      </div><!-- /results-area -->
+
+    </main>
+
+    <!-- ══════════════════ Footer ══════════════════ -->
+    <footer class="app-footer">
+      <p>محلل الجدوى التجارية والتحليل المالي — جميع الحسابات تتم محلياً في المتصفح بأمان تام ولا تُرسل أي بيانات للخارج</p>
+    </footer>
+
+    <!-- ══════════════════ Client Detail Modal ══════════════════ -->
+    <div class="modal-backdrop" id="client-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="modal-client-name">تفاصيل العميل</h3>
+          <button id="modal-close" class="btn btn-ghost btn-icon" aria-label="إغلاق">
+            <svg class="icon" style="width:20px;height:20px"><use href="#x"></use></svg>
+          </button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+
+  <!-- ══════════════════ Scripts (CDN) ══════════════════ -->
+  <!-- SheetJS - قراءة ملفات الإكسل -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+  <!-- Chart.js - الرسوم البيانية -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+  <!-- html2canvas - لتصوير الصفحة للـ PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <!-- jsPDF - إنشاء ملفات PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+
+  <!-- Application Scripts -->
+  <script src="js/excel-parser.js"></script>
+  <script src="js/calculator.js"></script>
+  <script src="js/classifier.js"></script>
+  <script src="js/pricing-engine.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/exporter.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
