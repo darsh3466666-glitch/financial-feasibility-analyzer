@@ -193,5 +193,12 @@ function generateRecommendation(client) {
     );
   }
 
+  // ═══════ تقييم الجدوى ═══════
+  if (client.isFeasible) {
+    recommendations.push(`✅ الجدوى العامة: العميل مُجدي استثمارياً وائتمانياً للشركة.`);
+  } else {
+    recommendations.push(`⚠️ الجدوى العامة: العميل غير مُجدي ائتمانياً (تأخير السداد أو ضعف التحصيل يستنزف أموال الشركة، ويُنصح بالتحول للدفع النقدي الفوري معه).`);
+  }
+
   return recommendations;
 }

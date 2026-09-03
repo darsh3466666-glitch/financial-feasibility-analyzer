@@ -16,6 +16,7 @@ const Exporter = {
       return {
         'اسم العميل': c.clientName,
         'التصنيف': c.classLabel,
+        'الجدوى': c.isFeasible ? 'مُجدي' : 'غير مُجدي',
         'إجمالي المبيعات': c.totalSales,
         'رصيد أول المدة': c.openingBalance,
         'رصيد آخر المدة': c.closingBalance,

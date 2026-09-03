@@ -283,7 +283,10 @@ const Renderer = {
           if (!a.avgReceivables || a.avgReceivables === 0 || a.dso === 0 || a.dso < 1 || a.annualizedTurnover >= 365) valA = Infinity;
           if (!b.avgReceivables || b.avgReceivables === 0 || b.dso === 0 || b.dso < 1 || b.annualizedTurnover >= 365) valB = Infinity;
         }
-
+        if (sortConfig.key === 'isFeasible') {
+          valA = a.isFeasible ? 1 : 0;
+          valB = b.isFeasible ? 1 : 0;
+        }
         if (sortConfig.key === 'totalMarkupPct') {
           valA = a.totalMarkupPct || 0;
           valB = b.totalMarkupPct || 0;
@@ -329,6 +332,11 @@ const Renderer = {
         <td class="num-cell" style="${isCash ? 'color: var(--accent-success);' : ''}">${dsoText}</td>
         <td>
           <span class="badge badge-${client.classification}">${client.classLabel}</span>
+        </td>
+        <td>
+          <span class="badge ${client.isFeasible ? 'badge-feasible' : 'badge-not-feasible'}">
+            ${client.isFeasible ? 'مُجدي' : 'غير مُجدي'}
+          </span>
         </td>
         <td class="num-cell">${markupText}</td>
         <td class="num-cell">${priceText}</td>
@@ -392,6 +400,12 @@ const Renderer = {
           <span class="detail-label">التصنيف</span>
           <span class="detail-value">
             <span class="badge badge-${client.classification}">${client.classLabel}</span>
+          </span>
+        </div>
+        <div class="client-detail-item">
+          <span class="detail-label">تقييم الجدوى</span>
+          <span class="detail-value" style="color: ${client.isFeasible ? 'var(--accent-success)' : 'var(--accent-danger)'}; font-weight: var(--weight-bold);">
+            ${client.isFeasible ? 'مُجدي ✅' : 'غير مُجدي ⚠️'}
           </span>
         </div>
         <div class="client-detail-item">

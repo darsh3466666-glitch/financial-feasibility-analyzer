@@ -211,8 +211,16 @@ function calculateClientMetrics(clientName, records, settings) {
   
   const qualityScore = scoreCollection + scoreDSO + scoreTurnover;
   
-  // العميل يعتبر "مُجدي" إذا حصل على درجة نجاح (مثلاً 50 من 100)
-  const isFeasible = qualityScore >= 50;
+  // تقييم الجدوى المالية الشاملة (مُجدي / غير مُجدي) بدقة متناهية:
+  // 1. عميل الكاش الفوري دائماً مُجدي 100% لعدم وجود مخاطر أو تكلفة انتظار
+  // 2. العميل الآجل يعتبر مُجدياً إذا كانت نقاط جودته ≥ 50، ومعدل تحصيله ≥ 40%، ومتوسط تحصيله لا يتجاوز 90 يوماً
+  const isInstantCash = (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365);
+  let isFeasible = false;
+  if (isInstantCash) {
+    isFeasible = true;
+  } else {
+    isFeasible = (qualityScore >= 50 && collectionRate >= 40 && dso <= 90);
+  }
 
   // ═══════════════════════════════════════════════
   // القسم الثالث: بيانات التسعير (الحساب الفعلي في pricing-engine.js)
