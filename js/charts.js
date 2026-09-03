@@ -166,12 +166,27 @@ const ChartsManager = {
     if (!ctx) return;
 
     const colors = this.getChartColors();
-    const hurdleRate = summary ? summary.hurdleRate : 0;
+    const minFeasibleScore = 50; // الحد الأدنى لنقاط الجودة والجدوى
 
-    // تجهيز البيانات لكل فئة
-    const goodData = clients.filter(c => c.classification === 'good').map(c => ({ x: c.dso, y: c.returnOnAR, label: c.clientName }));
-    const avgData = clients.filter(c => c.classification === 'average').map(c => ({ x: c.dso, y: c.returnOnAR, label: c.clientName }));
-    const poorData = clients.filter(c => c.classification === 'poor').map(c => ({ x: c.dso, y: c.returnOnAR, label: c.clientName }));
+    // تجهيز البيانات لكل فئة بالاعتماد على نقاط الجودة الشاملة (من 100)
+    const goodData = clients.filter(c => c.classification === 'good').map(c => ({ 
+      x: c.dso, 
+      y: c.qualityScore, 
+      label: c.clientName,
+      feasible: c.isFeasible 
+    }));
+    const avgData = clients.filter(c => c.classification === 'average').map(c => ({ 
+      x: c.dso, 
+      y: c.qualityScore, 
+      label: c.clientName,
+      feasible: c.isFeasible 
+    }));
+    const poorData = clients.filter(c => c.classification === 'poor').map(c => ({ 
+      x: c.dso, 
+      y: c.qualityScore, 
+      label: c.clientName,
+      feasible: c.isFeasible 
+    }));
 
     this.instances.feasibilityScatter = new Chart(ctx, {
       type: 'scatter',
@@ -224,10 +239,9 @@ const ChartsManager = {
             bodyFont: { family: "'IBM Plex Sans Arabic'" },
             callbacks: {
               title: (ctx) => ctx[0].raw.label || '',
-              label: (ctx) => `DSO: ${ctx.raw.x.toFixed(0)} يوم | عائد AR: ${ctx.raw.y.toFixed(1)}%`
+              label: (ctx) => `أيام التحصيل: ${ctx.raw.x.toFixed(0)} يوم | نقاط الجودة: ${ctx.raw.y.toFixed(1)}/100 | ${ctx.raw.feasible ? 'مُجدي ✅' : 'غير مُجدي ⚠️'}`
             }
-          },
-          annotation: undefined
+          }
         },
         scales: {
           x: {
@@ -244,9 +258,11 @@ const ChartsManager = {
             }
           },
           y: {
+            min: 0,
+            max: 100,
             title: {
               display: true,
-              text: 'العائد على المديونية %',
+              text: 'نقاط الجودة والجدوى المالية (من 100)',
               font: { family: "'IBM Plex Sans Arabic'", size: 12 },
               color: colors.text
             },
@@ -254,18 +270,17 @@ const ChartsManager = {
             ticks: {
               font: { family: "'IBM Plex Sans Arabic'", size: 11 },
               color: colors.text,
-              callback: (v) => v + '%'
+              callback: (v) => v + ' نقطة'
             }
           }
         }
       },
       plugins: [{
-        // رسم خط الحد الأدنى (Hurdle Rate)
+        // رسم خط حد الجدوى الأدنى (50 نقطة)
         id: 'hurdleLine',
         afterDraw: (chart) => {
-          if (hurdleRate <= 0) return;
           const yScale = chart.scales.y;
-          const yPixel = yScale.getPixelForValue(hurdleRate);
+          const yPixel = yScale.getPixelForValue(minFeasibleScore);
           if (yPixel === undefined || isNaN(yPixel)) return;
 
           const ctx = chart.ctx;
@@ -281,7 +296,7 @@ const ChartsManager = {
           ctx.fillStyle = colors.poor;
           ctx.font = "12px 'IBM Plex Sans Arabic'";
           ctx.textAlign = 'left';
-          ctx.fillText(`الحد الأدنى ${hurdleRate}%`, chart.chartArea.left + 5, yPixel - 8);
+          ctx.fillText(`حد الجدوى الأدنى (50 نقطة)`, chart.chartArea.left + 5, yPixel - 8);
           ctx.restore();
         }
       }]
@@ -374,7 +389,7 @@ const ChartsManager = {
     const colors = this.getChartColors();
 
     const top = [...clients]
-      .sort((a, b) => b.requiredMarkup - a.requiredMarkup)
+      .sort((a, b) => b.dso - a.dso)
       .slice(0, 15);
 
     this.instances.feasibility = new Chart(ctx, {
@@ -383,18 +398,20 @@ const ChartsManager = {
         labels: top.map(c => c.clientName.substring(0, 20)),
         datasets: [
           {
-            label: 'العائد على المديونية %',
-            data: top.map(c => c.returnOnAR),
-            backgroundColor: colors.good,
+            label: 'نقاط الجودة والجدوى (من 100)',
+            data: top.map(c => c.qualityScore),
+            backgroundColor: top.map(c => c.isFeasible ? colors.good : colors.poor),
             borderRadius: 4,
-            maxBarThickness: 20
+            maxBarThickness: 24
           },
           {
-            label: 'الحد الأدنى المطلوب %',
-            data: top.map(c => c.hurdleRate),
-            backgroundColor: colors.poor,
-            borderRadius: 4,
-            maxBarThickness: 20
+            label: 'حد الجدوى الأدنى (50 نقطة)',
+            data: top.map(() => 50),
+            type: 'line',
+            borderColor: colors.poor,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            fill: false
           }
         ]
       },
@@ -418,7 +435,7 @@ const ChartsManager = {
             titleFont: { family: "'IBM Plex Sans Arabic'" },
             bodyFont: { family: "'IBM Plex Sans Arabic'" },
             callbacks: {
-              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} نقطة`
             }
           }
         },
@@ -432,11 +449,13 @@ const ChartsManager = {
             }
           },
           y: {
+            min: 0,
+            max: 100,
             grid: { color: colors.grid },
             ticks: {
               font: { family: "'IBM Plex Sans Arabic'", size: 11 },
               color: colors.text,
-              callback: (v) => v + '%'
+              callback: (v) => v + ' نقطة'
             }
           }
         }

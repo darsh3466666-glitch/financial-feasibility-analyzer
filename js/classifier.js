@@ -101,28 +101,35 @@ function classifyClients(results, thresholds = null, riskPremiums = null) {
  */
 function classifyClient(result, thresholds) {
   const dso = result.dso;
-  const turnover = result.annualizedTurnover;
+  const collectionRate = result.collectionRate || 0;
+  const isCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || dso < 1 || result.annualizedTurnover >= 365);
 
-  // نظام التسجيل: نقطة لكل معيار يتحقق
+  // عميل السداد النقدي الفوري دائماً في الفئة الممتازة
+  if (isCash) return 'good';
+
+  // نظام التسجيل المالي المتوازن: يجمع بين سرعة السداد والالتزام بنسبة التحصيل
   let score = 0;
 
-  // تقييم أيام التحصيل
+  // 1. تقييم سرعة السداد (أيام التحصيل DSO) — حد أقصى نقطتان
   if (dso <= thresholds.good.maxDSO) {
-    score += 2;  // ممتاز
+    score += 2;  // سريع جداً (≤ 30 يوم)
   } else if (dso <= thresholds.average.maxDSO) {
-    score += 1;  // عادي
+    score += 1;  // سرعة مقبولة (31 - 60 يوم)
   }
-  // 0 = بطيء
+  // > 60 يوم = 0 (تأخير عالي)
 
-  // تقييم معدل الدوران
-  if (turnover >= thresholds.good.minTurnover) {
-    score += 2;  // ممتاز
-  } else if (turnover >= thresholds.average.minTurnover) {
-    score += 1;  // عادي
+  // 2. تقييم نسبة التحصيل والالتزام (Collection Rate) — حد أقصى نقطتان (بدلاً من تكرار مؤشر الدوران)
+  if (collectionRate >= 80) {
+    score += 2;  // التزام ممتاز (سدد 80% فأكثر من مديونيته)
+  } else if (collectionRate >= 50) {
+    score += 1;  // التزام متوسط (سدد من 50% إلى 79%)
   }
-  // 0 = بطيء
+  // أقل من 50% = 0 (معظم المديونية معلقة بالسوق)
 
-  // التصنيف النهائي بناءً على المجموع
+  // التصنيف النهائي:
+  // 3 أو 4 نقاط = ممتاز (A)
+  // 1 أو 2 نقاط = عادي (B)
+  // 0 نقاط = بطيء/متأخر (C)
   if (score >= 3) return 'good';
   if (score >= 1) return 'average';
   return 'poor';

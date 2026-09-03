@@ -360,10 +360,10 @@ function calculateAgingBuckets(sortedRecords, today, remainingDebt) {
 function getOpeningBalance(sortedRecords) {
   for (const record of sortedRecords) {
     if (record.openingBalance !== null && record.openingBalance !== undefined && !isNaN(record.openingBalance)) {
-      return Math.abs(record.openingBalance);
+      return Math.max(0, record.openingBalance);
     }
     if (record.balance !== null && record.balance !== undefined && !isNaN(record.balance)) {
-      return Math.abs(record.balance);
+      return Math.max(0, record.balance);
     }
   }
   return 0;
@@ -376,10 +376,10 @@ function getClosingBalance(sortedRecords) {
   for (let i = sortedRecords.length - 1; i >= 0; i--) {
     const record = sortedRecords[i];
     if (record.closingBalance !== null && record.closingBalance !== undefined && !isNaN(record.closingBalance)) {
-      return Math.abs(record.closingBalance);
+      return Math.max(0, record.closingBalance);
     }
     if (record.balance !== null && record.balance !== undefined && !isNaN(record.balance)) {
-      return Math.abs(record.balance);
+      return Math.max(0, record.balance);
     }
   }
   return 0;
@@ -412,9 +412,9 @@ function calculateAverageReceivables(sortedRecords, openingBalance, closingBalan
         lastTime = txTime;
       }
 
-      // تحديث الرصيد بعد الحركة
+      // تحديث الرصيد بعد الحركة (معاملة الرصيد الدائن السالب كمديونية صفرية)
       if (r.balance !== null && r.balance !== undefined && !isNaN(r.balance)) {
-        currentBalance = Math.abs(r.balance);
+        currentBalance = Math.max(0, r.balance);
       } else {
         const inv = r.invoiceAmount || 0;
         const pay = r.paymentAmount || 0;
@@ -440,7 +440,7 @@ function calculateAverageReceivables(sortedRecords, openingBalance, closingBalan
 
     for (const r of sortedRecords) {
       if (r.balance !== null && r.balance !== undefined && !isNaN(r.balance)) {
-        running = Math.abs(r.balance);
+        running = Math.max(0, r.balance);
       } else {
         running = Math.max(0, running + (r.invoiceAmount || 0) - (r.paymentAmount || 0));
       }
