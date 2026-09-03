@@ -86,11 +86,16 @@ const PricingEngine = {
     } = settings;
 
     return classifiedClients.map(client => {
-      // نسبة الزيادة = فائدة البنك السنوية × (أيام التحصيل DSO ÷ 365)
-      // إذا كان العميل كاش فوري (DSO = 0)، فالزيادة = 0% تلقائياً
-      const markupPct = (client.dso && client.dso > 0)
-        ? depositRate * (client.dso / 365)
-        : 0;
+      // بناءً على طلب المستخدم الحرفي:
+      // نسبة الزيادة = فائدة البنك (على الإيداع) ÷ معدل الدوران السنوي للعميل
+      let markupPct = 0;
+      if (client.dso === 0 || client.avgReceivables === 0) {
+        markupPct = 0; // عميل كاش فوري
+      } else if (client.annualizedTurnover > 0) {
+        markupPct = depositRate / client.annualizedTurnover;
+      } else if (client.dso > 0) {
+        markupPct = depositRate * (client.dso / 365);
+      }
 
       // إلغاء كل علاوات المخاطر والإضافات الأخرى كما طلب
       const totalMarkupPct = markupPct;

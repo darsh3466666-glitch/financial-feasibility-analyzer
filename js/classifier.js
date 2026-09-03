@@ -97,19 +97,35 @@ function classifyClients(results, thresholds = null, riskPremiums = null) {
 
 /**
  * تصنيف عميل واحد
- * بناءً على متوسط أيام التحصيل (DSO) المباشرة
+ * بناءً على متوسط أيام التحصيل ومعدل الدوران السنوي
  */
 function classifyClient(result, thresholds) {
-  const dso = result.dso || 0;
+  const dso = result.dso;
+  const turnover = result.annualizedTurnover;
 
-  // التصنيف المباشر والمنطقي بناءً على سرعة سداد العميل
+  // نظام التسجيل: نقطة لكل معيار يتحقق
+  let score = 0;
+
+  // تقييم أيام التحصيل
   if (dso <= thresholds.good.maxDSO) {
-    return 'good';     // ممتاز (A)
+    score += 2;  // ممتاز
   } else if (dso <= thresholds.average.maxDSO) {
-    return 'average';  // عادي (B)
-  } else {
-    return 'poor';     // بطيء (C)
+    score += 1;  // عادي
   }
+  // 0 = بطيء
+
+  // تقييم معدل الدوران
+  if (turnover >= thresholds.good.minTurnover) {
+    score += 2;  // ممتاز
+  } else if (turnover >= thresholds.average.minTurnover) {
+    score += 1;  // عادي
+  }
+  // 0 = بطيء
+
+  // التصنيف النهائي بناءً على المجموع
+  if (score >= 3) return 'good';
+  if (score >= 1) return 'average';
+  return 'poor';
 }
 
 /**
@@ -139,52 +155,27 @@ function getClassificationMeta(classification) {
 function generateRecommendation(client) {
   const recommendations = [];
 
-  // ═══════ القسم الأول: التحصيل ═══════
+  // ═══════ توصيات التحصيل وشروط الائتمان ═══════
   if (client.classification === 'poor') {
     recommendations.push(
-      `🔴 تصنيف السداد: ${client.classLabel} — متوسط أيام التحصيل ${formatNumber(client.dso, 0)} يوم (مرتفع)`
+      `🔴 تصنيف السداد: ${client.classLabel} — متوسط أيام التحصيل ${formatNumber(client.dso, 0)} يوم (تأخير مرتفع)`
     );
     recommendations.push(
-      `📋 يُنصح بمراجعة شروط الدفع أو تقليل حد الائتمان`
+      `📋 يُنصح بمراجعة شروط الدفع أو تقليل سقف الائتمان والتحويل للدفع النقدي الفوري عند الاستلام.`
     );
   } else if (client.classification === 'average') {
     recommendations.push(
-      `🟡 تصنيف السداد: ${client.classLabel} — ${formatNumber(client.dso, 0)} يوم تحصيل`
+      `🟡 تصنيف السداد: ${client.classLabel} — متوسط أيام التحصيل ${formatNumber(client.dso, 0)} يوم`
     );
     recommendations.push(
-      `📋 يمكن تحسين أداء العميل بمتابعة التحصيل وتقديم خصم سداد مبكر`
-    );
-  } else {
-    recommendations.push(
-      `🟢 تصنيف السداد: ${client.classLabel} — ${formatNumber(client.dso, 0)} يوم فقط`
-    );
-    recommendations.push(
-      `⭐ يستحق مكافأة الالتزام بخصم تفضيلي أو زيادة حد ائتماني`
-    );
-  }
-
-  // ═══════ القسم الثاني: الجدوى ═══════
-  if (client.isFeasible) {
-    recommendations.push(
-      `✅ الجدوى: مُجدي — العائد على المديونية (${formatPercent(client.returnOnAR)}) يفوق الحد الأدنى (${formatPercent(client.hurdleRate)}) بفائض ${formatPercent(client.feasibilityIndex)}`
+      `📋 يُنصح بمتابعة التحصيل الدوري وتقديم خصم تعجيل دفع لتشجيع السداد المبكر.`
     );
   } else {
     recommendations.push(
-      `⚠️ الجدوى: غير مُجدي — العائد على المديونية (${formatPercent(client.returnOnAR)}) أقل من الحد الأدنى (${formatPercent(client.hurdleRate)}) بعجز ${formatPercent(Math.abs(client.feasibilityIndex))}`
+      `🟢 تصنيف السداد: ${client.classLabel} — متوسط أيام التحصيل ${formatNumber(client.dso, 0)} يوم فقط (سداد سريع)`
     );
     recommendations.push(
-      `💰 تكلفة الفرصة البديلة: ${formatNumber(client.opportunityCost)} جنيه — إيداع نفس المبلغ بالبنك كان سيحقق هذا العائد`
-    );
-  }
-
-  // ═══════ القسم الثالث: التسعير ═══════
-  recommendations.push(
-    `🏷️ علاوة المخاطر المطبقة: ${formatPercent(client.riskPremium)} — تكلفة التمويل: ${formatPercent(client.financingCostPct)}`
-  );
-
-  if (!client.isFeasible) {
-    recommendations.push(
-      `💡 لتحقيق الجدوى: يُنصح بزيادة سعر البيع بنسبة ${formatPercent(client.requiredMarkup)} على الأقل أو تقصير مدة الائتمان`
+      `⭐ عميل ملتزم بالسداد، يستحق الحفاظ عليه وتفضيله في المعاملات.`
     );
   }
 

@@ -27,7 +27,7 @@ const Renderer = {
         </div>
         <span class="kpi-label">إجمالي العملاء</span>
         <span class="kpi-value">${formatNumber(summary.totalClients)}</span>
-        <span class="kpi-sub">${formatNumber(summary.feasibleCount)} مُجدي (${formatPercent(feasiblePct)}) — ${formatNumber(summary.notFeasibleCount)} غير مُجدي (${formatPercent(notFeasiblePct)})</span>
+        <span class="kpi-sub">إجمالي عدد حسابات العملاء المسجلة</span>
       </div>
 
       <div class="kpi-card kpi-card--gold animate-in">
@@ -55,6 +55,15 @@ const Renderer = {
         <span class="kpi-label">متوسط رصيد المديونية</span>
         <span class="kpi-value">${formatNumber(summary.totalReceivables)}</span>
         <span class="kpi-sub">إجمالي متوسط المديونيات خلال الفترة (جنيه)</span>
+      </div>
+
+      <div class="kpi-card kpi-card--success animate-in">
+        <div class="kpi-icon">
+          <svg class="icon"><use href="#refresh"></use></svg>
+        </div>
+        <span class="kpi-label">متوسط معدل الدوران</span>
+        <span class="kpi-value">${formatNumber(summary.avgTurnover, 1)}</span>
+        <span class="kpi-sub">مرة سنوياً</span>
       </div>
 
     `;
@@ -86,7 +95,7 @@ const Renderer = {
             <div class="feasibility-bar feasibility-bar--hurdle" style="width: ${Math.min(summary.avgQualityScore, 100)}%; background-color: ${summary.avgQualityScore >= 50 ? 'var(--accent-success)' : 'var(--accent-danger)'}"></div>
           </div>
           <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-light);">
-            <strong>المعادلة:</strong> نسبة التحصيل (50%) + سرعة السداد DSO (50%)
+            <strong>المعادلة:</strong> نقاط التحصيل (35) + نقاط سرعة السداد (40) + معدل الدوران (25)
           </div>
         </div>
 
@@ -287,16 +296,10 @@ const Renderer = {
         </td>
         <td class="num-cell">${formatNumber(client.totalSales)}</td>
         <td class="num-cell">${formatNumber(client.avgReceivables)}</td>
+        <td class="num-cell">${formatNumber(client.annualizedTurnover, 1)}</td>
         <td class="num-cell">${formatNumber(client.dso, 0)} يوم</td>
-        <td class="num-cell" style="color: ${client.qualityScore >= 50 ? 'var(--accent-success)' : 'var(--accent-danger)'}">${formatNumber(client.qualityScore, 1)}</td>
-        <td class="num-cell" style="color: var(--accent-danger)">${formatPercent(client.hiddenLossPct)}</td>
         <td>
           <span class="badge badge-${client.classification}">${client.classLabel}</span>
-        </td>
-        <td>
-          <span class="badge ${client.isFeasible ? 'badge-feasible' : 'badge-not-feasible'}">
-            ${client.isFeasible ? 'مُجدي' : 'غير مُجدي'}
-          </span>
         </td>
       </tr>
     `).join('');
@@ -337,7 +340,10 @@ const Renderer = {
           <span class="detail-label">متوسط المدينين</span>
           <span class="detail-value">${formatNumber(client.avgReceivables)} جنيه</span>
         </div>
-
+        <div class="client-detail-item">
+          <span class="detail-label">معدل الدوران السنوي</span>
+          <span class="detail-value">${formatNumber(client.annualizedTurnover, 1)} مرة</span>
+        </div>
         <div class="client-detail-item">
           <span class="detail-label">متوسط أيام التحصيل (DSO)</span>
           <span class="detail-value">${formatNumber(client.dso, 0)} يوم</span>
@@ -345,32 +351,6 @@ const Renderer = {
         <div class="client-detail-item">
           <span class="detail-label">معدل التحصيل</span>
           <span class="detail-value">${formatPercent(client.collectionRate)}</span>
-        </div>
-
-        <!-- القسم الثاني: الجدوى وجودة العميل -->
-        <div class="client-detail-item">
-          <span class="detail-label">نقاط الجودة الشاملة</span>
-          <span class="detail-value" style="color: ${client.qualityScore >= 50 ? 'var(--accent-success)' : 'var(--accent-danger)'}">${formatNumber(client.qualityScore, 1)} / 100</span>
-        </div>
-        <div class="client-detail-item">
-          <span class="detail-label">الخسارة الخفية (من المبيعات)</span>
-          <span class="detail-value" style="color: var(--accent-danger)">${formatPercent(client.hiddenLossPct)}</span>
-        </div>
-        <div class="client-detail-item">
-          <span class="detail-label">تكلفة الأموال المعطلة (قيمة)</span>
-          <span class="detail-value" style="color: var(--accent-warning)">${formatNumber(client.opportunityCost)} جنيه</span>
-        </div>
-        <div class="client-detail-item">
-          <span class="detail-label">تقييم الجدوى</span>
-          <span class="detail-value" style="color: ${client.isFeasible ? 'var(--accent-success)' : 'var(--accent-danger)'}">
-            ${client.isFeasible ? 'مُجدي' : 'غير مُجدي'}
-          </span>
-        </div>
-
-        <!-- القسم الثالث: التسعير -->
-        <div class="client-detail-item">
-          <span class="detail-label">علاوة المخاطر</span>
-          <span class="detail-value">${formatPercent(client.riskPremium)}</span>
         </div>
         <div class="client-detail-item">
           <span class="detail-label">التصنيف</span>
