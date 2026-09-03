@@ -107,7 +107,7 @@ const App = {
 
     const exportPdfBtn = document.getElementById('btn-export-pdf');
     if (exportPdfBtn) {
-      exportPdfBtn.addEventListener('click', () => Exporter.exportPDF());
+      exportPdfBtn.addEventListener('click', () => this.exportPDF());
     }
 
     // إغلاق الـ Modal
@@ -516,6 +516,24 @@ const App = {
       return;
     }
     Exporter.exportExcel(
+      this.state.classifiedClients,
+      this.state.salesByClass,
+      this.state.summary,
+      this.state.pricingReport,
+      this.state.pricingSummary,
+      this.readSettings()
+    );
+  },
+
+  /**
+   * تصدير التقرير التنفيذي PDF
+   */
+  exportPDF() {
+    if (!this.state.classifiedClients) {
+      showToast('لا توجد بيانات للتصدير', 'error');
+      return;
+    }
+    Exporter.exportPDF(
       this.state.classifiedClients,
       this.state.salesByClass,
       this.state.summary,
