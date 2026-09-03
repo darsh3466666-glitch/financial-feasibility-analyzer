@@ -97,35 +97,19 @@ function classifyClients(results, thresholds = null, riskPremiums = null) {
 
 /**
  * تصنيف عميل واحد
- * بناءً على متوسط أيام التحصيل ومعدل الدوران السنوي
+ * بناءً على متوسط أيام التحصيل (DSO) المباشرة
  */
 function classifyClient(result, thresholds) {
-  const dso = result.dso;
-  const turnover = result.annualizedTurnover;
+  const dso = result.dso || 0;
 
-  // نظام التسجيل: نقطة لكل معيار يتحقق
-  let score = 0;
-
-  // تقييم أيام التحصيل
+  // التصنيف المباشر والمنطقي بناءً على سرعة سداد العميل
   if (dso <= thresholds.good.maxDSO) {
-    score += 2;  // ممتاز
+    return 'good';     // ممتاز (A)
   } else if (dso <= thresholds.average.maxDSO) {
-    score += 1;  // عادي
+    return 'average';  // عادي (B)
+  } else {
+    return 'poor';     // بطيء (C)
   }
-  // 0 = بطيء
-
-  // تقييم معدل الدوران
-  if (turnover >= thresholds.good.minTurnover) {
-    score += 2;  // ممتاز
-  } else if (turnover >= thresholds.average.minTurnover) {
-    score += 1;  // عادي
-  }
-  // 0 = بطيء
-
-  // التصنيف النهائي بناءً على المجموع
-  if (score >= 3) return 'good';
-  if (score >= 1) return 'average';
-  return 'poor';
 }
 
 /**

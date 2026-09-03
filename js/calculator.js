@@ -184,18 +184,14 @@ function calculateClientMetrics(clientName, records, settings) {
   const feasibilityIndex = returnOnAR - hurdleRate;
 
   // 2. حساب "نقاط الجودة الشاملة" (من 100 نقطة)
-  // أ. نقاط معدل التحصيل (الحد الأقصى 35 نقطة)
-  const scoreCollection = (Math.min(100, collectionRate) / 100) * 35;
+  // أ. نقاط معدل التحصيل (الحد الأقصى 50 نقطة)
+  const scoreCollection = (Math.min(100, collectionRate) / 100) * 50;
   
-  // ب. نقاط سرعة السداد DSO (الحد الأقصى 40 نقطة)
-  // العميل يحصل على صفر إذا تجاوز 120 يوم (4 شهور)
-  const scoreDSO = Math.max(0, 40 - (dso / 120) * 40);
+  // ب. نقاط سرعة السداد DSO (الحد الأقصى 50 نقطة)
+  // العميل يحصل على صفر إذا تجاوز 120 يوم (4 شهور) تحصيل
+  const scoreDSO = Math.max(0, 50 - (dso / 120) * 50);
   
-  // ج. نقاط معدل دوران المديونية (الحد الأقصى 25 نقطة)
-  // العميل المثالي يدور ماله 12 مرة سنوياً (شهرياً)
-  const scoreTurnover = Math.min(25, (annualizedTurnover / 12) * 25);
-  
-  const qualityScore = scoreCollection + scoreDSO + scoreTurnover;
+  const qualityScore = scoreCollection + scoreDSO;
   
   // العميل يعتبر "مُجدي" إذا حصل على درجة نجاح (مثلاً 50 من 100)
   const isFeasible = qualityScore >= 50;
@@ -445,7 +441,6 @@ function calculateSummary(results, settings) {
     notFeasibleCount,
     totalOpportunityCost: roundTo(totalOpportunityCost, 2),
     totalFinancingCost: roundTo(totalFinancingCost, 2),
-    hurdleRate: roundTo(hurdleRate, 2),
     totalAging
   };
 }
