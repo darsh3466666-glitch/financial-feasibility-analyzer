@@ -204,30 +204,25 @@ function calculateClientMetrics(clientName, records, settings) {
   const returnOnAR = grossMargin * annualizedTurnover;
   const feasibilityIndex = returnOnAR - hurdleRate;
 
-  // 2. حساب "نقاط الجودة الشاملة" (من 100 نقطة)
-  // أ. نقاط معدل التحصيل (الحد الأقصى 35 نقطة)
-  const scoreCollection = (Math.min(100, collectionRate) / 100) * 35;
-  
-  // ب. نقاط سرعة السداد DSO (الحد الأقصى 40 نقطة)
-  // العميل يحصل على صفر إذا تجاوز 120 يوم (4 شهور)
-  const scoreDSO = Math.max(0, 40 - (dso / 120) * 40);
-  
-  // ج. نقاط معدل دوران المديونية (الحد الأقصى 25 نقطة)
-  // العميل المثالي يدور ماله 12 مرة سنوياً (شهرياً)
-  const scoreTurnover = Math.min(25, (annualizedTurnover / 12) * 25);
-  
-  const qualityScore = isCreditClient ? 100 : (scoreCollection + scoreDSO + scoreTurnover);
-  
-  // تقييم الجدوى المالية الشاملة (مُجدي / غير مُجدي) بدقة متناهية:
-  // 1. عميل الكاش الفوري والعميل الدائن دائماً مُجدي 100% لعدم وجود مخاطر أو تكلفة انتظار
-  // 2. العميل الآجل يعتبر مُجدياً إذا وفقط إذا كانت نقاط جودته ≥ 50 (فوق خط الحد الأدنى)، ومعدل تحصيله ≥ 40%، وفترة تحصيله لا تتجاوز 90 يوماً
+  // 2. تقييم الجدوى الائتمانية والتجارية واقعياً طبقاً لأعمار الديون وسرعة السداد (IFRS 9 & Aging Schedule):
+  // - عميل السداد الفوري والدائن (دفعات مقدمة) مُجدي 100% لعدم وجود مخاطر أو تعطل سيولة.
+  // - العميل الآجل يعتبر مُجدياً اقتصادياً إذا وفقط إذا:
+  //   1. لا توجد لديه أي ديون راكدة/متعثرة في شريحة أكثر من 90 يوماً (> 90 يوم)
+  //   2. لا توجد لديه ديون متأخرة في شريحة 61 - 90 يوماً
+  //   3. متوسط أيام تحصيله مقبولة لا تتجاوز فترة الائتمان القياسية (DSO ≤ 60 يوماً)
+  //   4. نسبة التزامه بالتحصيل مقبولة (Collection Rate ≥ 50%)
   const isInstantCash = isCreditClient || (dso < 1 && (!avgReceivables || avgReceivables === 0));
+  const hasOverdueDebt = Boolean((agingBuckets.over90 && agingBuckets.over90 > 0) || (agingBuckets.days90 && agingBuckets.days90 > 0));
   let isFeasible = false;
   if (isInstantCash) {
     isFeasible = true;
   } else {
-    isFeasible = (qualityScore >= 50 && collectionRate >= 40 && dso <= 90);
+    isFeasible = (!hasOverdueDebt && dso <= 60 && collectionRate >= 50);
   }
+
+  // نسبة الديون الآمنة الجارية (0-30 يوم) من إجمالي مديونية العميل طبقاً لجدول أعمار الديون المعتمد
+  const safeDebtPct = (agingBuckets.total > 0) ? roundTo((agingBuckets.current / agingBuckets.total) * 100, 1) : 100;
+  const qualityScore = safeDebtPct; // للتوافق بدون أي نقاط مصطنعة
 
   // ═══════════════════════════════════════════════
   // القسم الثالث: بيانات التسعير (الحساب الفعلي في pricing-engine.js)
@@ -528,7 +523,7 @@ function calculateSummary(results, settings) {
   const totalOpportunityCost = results.reduce((s, r) => s + r.opportunityCost, 0);
   const totalFinancingCost = results.reduce((s, r) => s + r.financingCost, 0);
 
-  // أعمار الديون الإجمالية
+  // أعمار الديون الإجمالية ومؤشرات الجودة المحاسبية
   const totalAging = {
     current: roundTo(results.reduce((s, r) => s + (r.agingBuckets?.current || 0), 0), 2),
     days30: roundTo(results.reduce((s, r) => s + (r.agingBuckets?.days30 || 0), 0), 2),
@@ -541,6 +536,10 @@ function calculateSummary(results, settings) {
     total: 0
   };
   totalAging.total = roundTo(totalAging.current + totalAging.days30 + totalAging.days60 + totalAging.days90 + totalAging.over90, 2);
+
+  const totalAgingSum = totalAging.total;
+  const safeDebtRatio = totalAgingSum > 0 ? roundTo((totalAging.current / totalAgingSum) * 100, 1) : 100;
+  const overdueDebtRatio = totalAgingSum > 0 ? roundTo(((totalAging.days90 + totalAging.over90) / totalAgingSum) * 100, 1) : 0;
 
   return {
     totalClients,
@@ -558,13 +557,14 @@ function calculateSummary(results, settings) {
     hurdleRate: roundTo(hurdleRate, 2),
     avgReturnOnAR: roundTo(avgReturnOnAR, 2),
     avgFeasibilityIndex: roundTo(avgFeasibilityIndex, 2),
-    avgQualityScore: roundTo(avgQualityScore, 1),
+    avgQualityScore: safeDebtRatio, // توافق مع تقارير الواجهة
+    safeDebtRatio,
+    overdueDebtRatio,
     avgHiddenLossPct: roundTo(avgHiddenLossPct, 2),
     feasibleCount,
     notFeasibleCount,
     totalOpportunityCost: roundTo(totalOpportunityCost, 2),
     totalFinancingCost: roundTo(totalFinancingCost, 2),
-    hurdleRate: roundTo(hurdleRate, 2),
     totalAging
   };
 }

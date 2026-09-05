@@ -343,8 +343,8 @@
             <!-- Feasibility Scatter -->
             <div class="chart-container">
               <div class="chart-header">
-                <span class="chart-title">مؤشر الجودة والجدوى مقابل أيام التحصيل</span>
-                <span class="chart-subtitle">النقاط فوق خط الـ 50 = مُجدي اقتصادياً | 🟢 ممتاز 🟡 عادي 🔴 بطيء</span>
+                <span class="chart-title">مؤشر الالتزام بالتحصيل مقابل أيام التحصيل (DSO)</span>
+                <span class="chart-subtitle">النسبة فوق خط الـ 50% = التزام مقبول بالسداد | 🟢 ممتاز 🟡 عادي 🔴 بطيء</span>
               </div>
               <div class="chart-canvas-wrapper">
                 <canvas id="chart-feasibility-scatter"></canvas>
@@ -365,8 +365,8 @@
             <!-- Feasibility Comparison -->
             <div class="chart-container">
               <div class="chart-header">
-                <span class="chart-title">مقارنة نقاط الجودة والجدوى مع الحد الأدنى المقبول</span>
-                <span class="chart-subtitle">🟢 أخضر = مُجدي ومستوفٍ للشروط (≥ 50) | 🔴 أحمر = غير مُجدي دون الحد (&lt; 50)</span>
+                <span class="chart-title">مقارنة أيام التحصيل (DSO) مع الحد الأقصى للائتمان</span>
+                <span class="chart-subtitle">🟢 أخضر = ملتزم بفترة الائتمان (≤ 60 يوم) | 🔴 أحمر = تجاوز فترة الائتمان (&gt; 60 يوم)</span>
               </div>
               <div class="chart-canvas-wrapper">
                 <canvas id="chart-feasibility"></canvas>
@@ -429,15 +429,15 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 
   <!-- Application Scripts -->
-  <script src="js/excel-parser.js?v=3.4"></script>
-  <script src="js/calculator.js?v=3.4"></script>
-  <script src="js/classifier.js?v=3.4"></script>
-  <script src="js/pricing-engine.js?v=3.4"></script>
-  <script src="js/renderer.js?v=3.4"></script>
-  <script src="js/charts.js?v=3.4"></script>
-  <script src="js/exporter.js?v=3.4"></script>
-  <script src="js/theme.js?v=3.4"></script>
-  <script src="js/app.js?v=3.4"></script>
+  <script src="js/excel-parser.js?v=3.5"></script>
+  <script src="js/calculator.js?v=3.5"></script>
+  <script src="js/classifier.js?v=3.5"></script>
+  <script src="js/pricing-engine.js?v=3.5"></script>
+  <script src="js/renderer.js?v=3.5"></script>
+  <script src="js/charts.js?v=3.5"></script>
+  <script src="js/exporter.js?v=3.5"></script>
+  <script src="js/theme.js?v=3.5"></script>
+  <script src="js/app.js?v=3.5"></script>
 
 </body>
 </html>

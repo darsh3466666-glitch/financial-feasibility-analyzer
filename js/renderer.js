@@ -107,14 +107,14 @@ const Renderer = {
         <!-- مؤشرات الجدوى الكلية -->
         <div class="feasibility-card card animate-in">
           <div class="feasibility-header">
-            <span class="feasibility-title">متوسط نقاط الجودة الشاملة</span>
-            <span class="feasibility-value" style="color: ${summary.avgQualityScore >= 50 ? 'var(--accent-success)' : 'var(--accent-danger)'}">${formatNumber(summary.avgQualityScore, 1)} / 100</span>
+            <span class="feasibility-title">نسبة الديون السارية الآمنة (0 - 30 يوماً)</span>
+            <span class="feasibility-value" style="color: ${summary.safeDebtRatio >= 70 ? 'var(--accent-success)' : (summary.safeDebtRatio >= 50 ? 'var(--accent-warning)' : 'var(--accent-danger)')}">${formatPercent(summary.safeDebtRatio)}</span>
           </div>
           <div class="feasibility-bar-container">
-            <div class="feasibility-bar feasibility-bar--hurdle" style="width: ${Math.min(summary.avgQualityScore, 100)}%; background-color: ${summary.avgQualityScore >= 50 ? 'var(--accent-success)' : 'var(--accent-danger)'}"></div>
+            <div class="feasibility-bar feasibility-bar--hurdle" style="width: ${Math.min(summary.safeDebtRatio, 100)}%; background-color: ${summary.safeDebtRatio >= 70 ? 'var(--accent-success)' : (summary.safeDebtRatio >= 50 ? 'var(--accent-warning)' : 'var(--accent-danger)')}"></div>
           </div>
           <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-light);">
-            <strong>المعادلة:</strong> نقاط التحصيل (35) + نقاط سرعة السداد (40) + معدل الدوران (25)
+            <strong>المعادلة:</strong> (ديون الشريحة الجارية 0-30 يوم ÷ إجمالي الديون) × 100
           </div>
         </div>
 
