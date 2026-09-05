@@ -113,9 +113,9 @@ const ChartsManager = {
           label: 'أيام التحصيل',
           data: top.map(c => c.dso),
           backgroundColor: top.map(c => {
-            if (c.dso > 60) return colors.poor;     // تأخير مرتفع - خطر مالي
-            if (c.dso > 30) return colors.average;  // فترة مقبولة / متوسطة
-            return colors.good;                     // تحصيل سريع وآمن
+            if (c.classification === 'good') return colors.good;
+            if (c.classification === 'average') return colors.average;
+            return colors.poor;
           }),
           borderRadius: 6,
           borderSkipped: false,
@@ -133,11 +133,7 @@ const ChartsManager = {
             titleFont: { family: "'IBM Plex Sans Arabic'" },
             bodyFont: { family: "'IBM Plex Sans Arabic'" },
             callbacks: {
-              label: (ctx) => {
-                const val = ctx.parsed.x;
-                const status = val > 60 ? 'تأخير عالي ⚠️' : (val > 30 ? 'فترة متوسطة ⏱️' : 'تحصيل سريع ✅');
-                return `أيام التحصيل: ${val.toFixed(0)} يوم (${status})`;
-              }
+              label: (ctx) => `${ctx.parsed.x.toFixed(0)} يوم`
             }
           }
         },
@@ -170,24 +166,24 @@ const ChartsManager = {
     if (!ctx) return;
 
     const colors = this.getChartColors();
-    const minCollectionRate = 50; // الحد الأدنى لنسبة التحصيل والالتزام (50%)
+    const minFeasibleScore = 50; // الحد الأدنى لنقاط الجودة والجدوى
 
-    // تجهيز البيانات لكل فئة بالاعتماد على نسبة التحصيل الفعلية وأيام التحصيل DSO
+    // تجهيز البيانات لكل فئة بالاعتماد على نقاط الجودة الشاملة (من 100)
     const goodData = clients.filter(c => c.classification === 'good').map(c => ({ 
       x: c.dso, 
-      y: c.collectionRate, 
+      y: c.qualityScore, 
       label: c.clientName,
       feasible: c.isFeasible 
     }));
     const avgData = clients.filter(c => c.classification === 'average').map(c => ({ 
       x: c.dso, 
-      y: c.collectionRate, 
+      y: c.qualityScore, 
       label: c.clientName,
       feasible: c.isFeasible 
     }));
     const poorData = clients.filter(c => c.classification === 'poor').map(c => ({ 
       x: c.dso, 
-      y: c.collectionRate, 
+      y: c.qualityScore, 
       label: c.clientName,
       feasible: c.isFeasible 
     }));
@@ -243,7 +239,7 @@ const ChartsManager = {
             bodyFont: { family: "'IBM Plex Sans Arabic'" },
             callbacks: {
               title: (ctx) => ctx[0].raw.label || '',
-              label: (ctx) => `أيام التحصيل: ${ctx.raw.x.toFixed(0)} يوم | نسبة التحصيل: ${ctx.raw.y.toFixed(1)}% | ${ctx.raw.feasible ? 'مُجدي ائتمانياً ✅' : 'غير مُجدي ⚠️'}`
+              label: (ctx) => `أيام التحصيل: ${ctx.raw.x.toFixed(0)} يوم | نقاط الجودة: ${ctx.raw.y.toFixed(1)}/100 | ${ctx.raw.feasible ? 'مُجدي ✅' : 'غير مُجدي ⚠️'}`
             }
           }
         },
@@ -266,7 +262,7 @@ const ChartsManager = {
             max: 100,
             title: {
               display: true,
-              text: 'نسبة التحصيل والالتزام بالسداد (%)',
+              text: 'نقاط الجودة والجدوى المالية (من 100)',
               font: { family: "'IBM Plex Sans Arabic'", size: 12 },
               color: colors.text
             },
@@ -274,17 +270,17 @@ const ChartsManager = {
             ticks: {
               font: { family: "'IBM Plex Sans Arabic'", size: 11 },
               color: colors.text,
-              callback: (v) => v + '%'
+              callback: (v) => v + ' نقطة'
             }
           }
         }
       },
       plugins: [{
-        // رسم خط حد التحصيل الأدنى (50%)
+        // رسم خط حد الجدوى الأدنى (50 نقطة)
         id: 'hurdleLine',
         afterDraw: (chart) => {
           const yScale = chart.scales.y;
-          const yPixel = yScale.getPixelForValue(minCollectionRate);
+          const yPixel = yScale.getPixelForValue(minFeasibleScore);
           if (yPixel === undefined || isNaN(yPixel)) return;
 
           const ctx = chart.ctx;
@@ -300,7 +296,7 @@ const ChartsManager = {
           ctx.fillStyle = colors.poor;
           ctx.font = "12px 'IBM Plex Sans Arabic'";
           ctx.textAlign = 'left';
-          ctx.fillText(`حد التحصيل الأدنى المقبول (50%)`, chart.chartArea.left + 5, yPixel - 8);
+          ctx.fillText(`حد الجدوى الأدنى (50 نقطة)`, chart.chartArea.left + 5, yPixel - 8);
           ctx.restore();
         }
       }]
@@ -321,19 +317,8 @@ const ChartsManager = {
     });
 
     const labels = ['A ممتاز', 'B عادي', 'C بطيء'];
-    const agingLabels = [
-      '0-30 يوم (آمن)',
-      '31-60 يوم (مقبول)',
-      '61-90 يوم (تحذير)',
-      '> 90 يوم (خطر متعثر)'
-    ];
-    // ألوان حرارية دلالية متدرجة تعبر بدقة عن مستوى خطورة عمر الدين
-    const agingColors = [
-      '#10B981', // أخضر زمردي - دين حالي آمن
-      '#F59E0B', // كهرماني - مستحق قريباً
-      '#EA580C', // برتقالي داكن - مرحلة تأخير وتحذير
-      '#EF4444'  // قرمزي - ديون قديمة متعثرة / خطر ائتماني
-    ];
+    const agingLabels = ['0-30 يوم', '31-60 يوم', '61-90 يوم', '> 90 يوم'];
+    const agingColors = [colors.good, colors.average, '#F97316', colors.poor];
 
     const getSum = (arr, key) => arr.reduce((s, c) => s + (c.agingBuckets?.[key] || 0), 0);
 
@@ -395,7 +380,7 @@ const ChartsManager = {
   },
 
   /**
-   * رسم بياني - مقارنة أيام التحصيل الفعلية مع الحد الأقصى للائتمان (60 يوماً)
+   * رسم بياني - مقارنة العائد على المديونية مع الحد الأدنى
    */
   renderFeasibilityBar(clients) {
     const ctx = document.getElementById('chart-feasibility');
@@ -413,15 +398,15 @@ const ChartsManager = {
         labels: top.map(c => c.clientName.substring(0, 20)),
         datasets: [
           {
-            label: 'أيام التحصيل الفعلية (DSO)',
-            data: top.map(c => c.dso),
-            backgroundColor: top.map(c => c.dso <= 60 ? colors.good : colors.poor),
+            label: 'نقاط الجودة والجدوى (من 100)',
+            data: top.map(c => c.qualityScore),
+            backgroundColor: top.map(c => c.isFeasible ? colors.good : colors.poor),
             borderRadius: 4,
             maxBarThickness: 24
           },
           {
-            label: 'الحد الأقصى للائتمان المقبول (60 يوماً)',
-            data: top.map(() => 60),
+            label: 'حد الجدوى الأدنى (50 نقطة)',
+            data: top.map(() => 50),
             type: 'line',
             borderColor: colors.poor,
             borderDash: [6, 4],
@@ -450,12 +435,7 @@ const ChartsManager = {
             titleFont: { family: "'IBM Plex Sans Arabic'" },
             bodyFont: { family: "'IBM Plex Sans Arabic'" },
             callbacks: {
-              label: (ctx) => {
-                if (ctx.dataset.type === 'line') return ctx.dataset.label;
-                const dso = ctx.parsed.y;
-                const isPass = dso <= 60;
-                return `أيام التحصيل: ${dso.toFixed(0)} يوم — ${isPass ? 'ملتزم بالحد الائتماني المقبول ✅' : 'تجاوز فترة الائتمان (تأخير) ❌'}`;
-              }
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} نقطة`
             }
           }
         },
@@ -470,11 +450,12 @@ const ChartsManager = {
           },
           y: {
             min: 0,
+            max: 100,
             grid: { color: colors.grid },
             ticks: {
               font: { family: "'IBM Plex Sans Arabic'", size: 11 },
               color: colors.text,
-              callback: (v) => v + ' يوم'
+              callback: (v) => v + ' نقطة'
             }
           }
         }

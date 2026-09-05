@@ -13,7 +13,7 @@ const Exporter = {
     // ═══ Sheet 1: جدول العملاء الشامل ═══
     const clientsData = classifiedClients.map(c => {
       const isCredit = c.isCredit || c.closingBalance < 0;
-      const isCash = isCredit || c.dso === 0 || c.dso < 1 || (!c.avgReceivables && c.dso === 0) || c.annualizedTurnover >= 365;
+      const isCash = (!c.avgReceivables || c.avgReceivables === 0 || c.dso === 0 || c.dso < 1 || c.annualizedTurnover >= 365 || isCredit || c.closingBalance <= 0);
       return {
         'اسم العميل': c.clientName,
         'التصنيف': c.classLabel,
@@ -244,11 +244,11 @@ const Exporter = {
           <h3 style="margin: 0 0 8px 0; font-size: 13.5px; color: #0369a1; border-right: 4px solid #0284c7; padding-right: 8px;">2. تقييم الجدوى وتكلفة الأموال المعطلة</h3>
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px;">
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
-              <div style="font-size: 10.5px; color: #64748b;">نسبة الديون السارية الآمنة</div>
-              <div style="font-size: 17px; font-weight: 800; color: ${summary.safeDebtRatio >= 70 ? '#059669' : '#dc2626'}; margin: 2px 0;">
-                ${formatPercent(summary.safeDebtRatio)}
+              <div style="font-size: 10.5px; color: #64748b;">متوسط نقاط الجودة الشاملة</div>
+              <div style="font-size: 17px; font-weight: 800; color: ${summary.avgQualityScore >= 50 ? '#059669' : '#dc2626'}; margin: 2px 0;">
+                ${formatNumber(summary.avgQualityScore, 1)} / 100
               </div>
-              <div style="font-size: 9px; color: #64748b;">ديون الشريحة الجارية (0 - 30 يوماً)</div>
+              <div style="font-size: 9px; color: #64748b;">تقييم متكامل للسرعة والتحصيل</div>
             </div>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
               <div style="font-size: 10.5px; color: #64748b;">نسبة الخسارة الخفية</div>

@@ -107,14 +107,14 @@ const Renderer = {
         <!-- مؤشرات الجدوى الكلية -->
         <div class="feasibility-card card animate-in">
           <div class="feasibility-header">
-            <span class="feasibility-title">نسبة الديون السارية الآمنة (0 - 30 يوماً)</span>
-            <span class="feasibility-value" style="color: ${summary.safeDebtRatio >= 70 ? 'var(--accent-success)' : (summary.safeDebtRatio >= 50 ? 'var(--accent-warning)' : 'var(--accent-danger)')}">${formatPercent(summary.safeDebtRatio)}</span>
+            <span class="feasibility-title">متوسط نقاط الجودة الشاملة</span>
+            <span class="feasibility-value" style="color: ${summary.avgQualityScore >= 50 ? 'var(--accent-success)' : 'var(--accent-danger)'}">${formatNumber(summary.avgQualityScore, 1)} / 100</span>
           </div>
           <div class="feasibility-bar-container">
-            <div class="feasibility-bar feasibility-bar--hurdle" style="width: ${Math.min(summary.safeDebtRatio, 100)}%; background-color: ${summary.safeDebtRatio >= 70 ? 'var(--accent-success)' : (summary.safeDebtRatio >= 50 ? 'var(--accent-warning)' : 'var(--accent-danger)')}"></div>
+            <div class="feasibility-bar feasibility-bar--hurdle" style="width: ${Math.min(summary.avgQualityScore, 100)}%; background-color: ${summary.avgQualityScore >= 50 ? 'var(--accent-success)' : 'var(--accent-danger)'}"></div>
           </div>
           <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-light);">
-            <strong>المعادلة:</strong> (ديون الشريحة الجارية 0-30 يوم ÷ إجمالي الديون) × 100
+            <strong>المعادلة:</strong> نقاط التحصيل (35) + نقاط سرعة السداد (40) + معدل الدوران (25)
           </div>
         </div>
 
@@ -343,7 +343,7 @@ const Renderer = {
 
     container.innerHTML = sorted.map((client, index) => {
       const isCredit = client.isCredit || client.closingBalance < 0;
-      const isCash = isCredit || client.dso === 0 || client.dso < 1 || (!client.avgReceivables && client.dso === 0) || client.annualizedTurnover >= 365;
+      const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365 || isCredit || client.closingBalance <= 0);
       const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : formatNumber(client.annualizedTurnover, 1));
       const dsoText = isCredit ? '0 يوم (دائن)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`);
 
@@ -393,7 +393,7 @@ const Renderer = {
     const recommendations = generateRecommendation(client);
     const aging = client.agingBuckets || {};
     const isCredit = client.isCredit || client.closingBalance < 0;
-    const isCash = isCredit || client.dso === 0 || client.dso < 1 || (!client.avgReceivables && client.dso === 0) || client.annualizedTurnover >= 365;
+    const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365 || isCredit || client.closingBalance <= 0);
     const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : `${formatNumber(client.annualizedTurnover, 1)} مرة`);
     const dsoText = isCredit ? '0 يوم (دائن / دفعة مقدمة)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`);
     const priceVal = (client.suggestedPrice && client.suggestedPrice > 0) ? client.suggestedPrice : (client.cashPrice || 0);
