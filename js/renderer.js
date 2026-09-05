@@ -85,6 +85,15 @@ const Renderer = {
         <span class="kpi-sub">مرة سنوياً (متوافق مع متوسط سداد ${formatNumber(summary.avgDSO, 0)} يوم)</span>
       </div>
 
+      <div class="kpi-card animate-in" style="border-top: 3px solid ${summary.avgCollectionRate >= 75 ? 'var(--accent-success)' : summary.avgCollectionRate >= 50 ? 'var(--accent-warning)' : 'var(--accent-danger)'};">
+        <div class="kpi-icon" style="color: ${summary.avgCollectionRate >= 75 ? 'var(--accent-success)' : summary.avgCollectionRate >= 50 ? 'var(--accent-warning)' : 'var(--accent-danger)'};">
+          <svg class="icon"><use href="#shield"></use></svg>
+        </div>
+        <span class="kpi-label">معدل التحصيل الإجمالي للمحفظة</span>
+        <span class="kpi-value" style="color: ${summary.avgCollectionRate >= 75 ? 'var(--accent-success)' : summary.avgCollectionRate >= 50 ? 'var(--accent-warning)' : 'var(--accent-danger)'};">${formatPercent(summary.avgCollectionRate)}</span>
+        <span class="kpi-sub">نسبة المحصّل نقداً من إجمالي المستحق</span>
+      </div>
+
     `;
   },
 
@@ -272,10 +281,11 @@ const Renderer = {
             <tr>
               <th>التصنيف</th>
               <th>عدد العملاء</th>
-              <th>المبيعات (المسددة)</th>
-              <th>النسبة</th>
-              <th>إجمالي المديونية المتبقية</th>
-              <th>النسبة</th>
+              <th>إجمالي المبيعات</th>
+              <th>نسبة المبيعات</th>
+              <th>الرصيد الآجل المتبقي</th>
+              <th>نسبة الآجل</th>
+              <th>متوسط أيام التحصيل</th>
             </tr>
           </thead>
           <tbody>
@@ -287,10 +297,11 @@ const Renderer = {
         <tr>
           <td><span class="badge ${meta.badge}">${meta.label}</span></td>
           <td class="num-cell">${formatNumber(data.count)}</td>
-          <td class="num-cell" style="color: var(--accent-success);">${formatNumber(data.totalCashSales)}</td>
-          <td class="num-cell" style="color: var(--accent-success);">${formatPercent(data.cashSalesPercentage)}</td>
-          <td class="num-cell" style="color: var(--accent-warning);">${formatNumber(data.totalCreditSales)}</td>
-          <td class="num-cell" style="color: var(--accent-warning);">${formatPercent(data.creditSalesPercentage)}</td>
+          <td class="num-cell" style="color: var(--accent-primary); font-weight: 600;">${formatNumber(data.totalSales)} جنيه</td>
+          <td class="num-cell" style="color: var(--accent-primary); font-weight: 600;">${formatPercent(data.salesPercentage)}</td>
+          <td class="num-cell" style="color: var(--accent-warning); font-weight: 600;">${formatNumber(data.totalCreditSales)} جنيه</td>
+          <td class="num-cell" style="color: var(--accent-warning); font-weight: 600;">${formatPercent(data.creditSalesPercentage)}</td>
+          <td class="num-cell">${formatNumber(data.avgDSO, 0)} يوم</td>
         </tr>
       `;
     }
@@ -368,6 +379,7 @@ const Renderer = {
         <td class="num-cell">${formatNumber(client.avgReceivables)}</td>
         <td class="num-cell" style="${isCash ? 'color: var(--accent-success); font-weight: var(--weight-bold);' : ''}">${turnoverText}</td>
         <td class="num-cell" style="${isCash ? 'color: var(--accent-success);' : ''}">${dsoText}</td>
+        <td class="num-cell" style="color: ${client.collectionRate >= 80 ? 'var(--accent-success)' : client.collectionRate >= 50 ? 'var(--accent-warning)' : 'var(--accent-danger)'}; font-weight: 600;">${formatPercent(client.collectionRate)}</td>
         <td>
           <span class="badge badge-${client.classification}">${client.classLabel}</span>
         </td>

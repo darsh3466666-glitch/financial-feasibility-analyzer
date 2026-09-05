@@ -129,7 +129,7 @@ const Exporter = {
     const fileName = `تحليل_الجدوى_التجارية_${new Date().toISOString().slice(0, 10)}.xlsx`;
     XLSX.writeFile(wb, fileName);
 
-    showToast('تم تصدير الملف الشامل بنجاح (6 شيتات)', 'success');
+    showToast('تم تصدير الملف الشامل بنجاح (5 شيتات مالية)', 'success');
   },
 
   /**
@@ -404,6 +404,7 @@ const Exporter = {
                 <th style="padding: 5px 6px;">إجمالي المبيعات</th>
                 <th style="padding: 5px 6px;">متوسط المدينين</th>
                 <th style="padding: 5px 6px;">DSO</th>
+                <th style="padding: 5px 6px;">التحصيل %</th>
                 <th style="padding: 5px 6px;">نسبة الزيادة</th>
                 <th style="padding: 5px 6px; border-radius: 4px 0 0 0;">السعر المقترح</th>
               </tr>
@@ -424,6 +425,7 @@ const Exporter = {
                     <td style="padding: 4px 6px;">${formatNumber(c.totalSales)}</td>
                     <td style="padding: 4px 6px;">${formatNumber(c.avgReceivables)}</td>
                     <td style="padding: 4px 6px;">${isCash ? '0' : formatNumber(c.dso, 0)} يوم</td>
+                    <td style="padding: 4px 6px; font-weight: 600; color: ${c.collectionRate >= 80 ? '#059669' : c.collectionRate >= 50 ? '#d97706' : '#dc2626'};">${formatPercent(c.collectionRate)}</td>
                     <td style="padding: 4px 6px; color: ${cColor}; font-weight: 700;">${isCash ? '0.0%' : '+' + formatPercent(c.totalMarkupPct || 0)}</td>
                     <td style="padding: 4px 6px; color: ${cColor}; font-weight: 800;">${formatNumber(priceVal)} ج</td>
                   </tr>

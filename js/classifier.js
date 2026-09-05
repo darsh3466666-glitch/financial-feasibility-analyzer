@@ -97,42 +97,46 @@ function classifyClients(results, thresholds = null, riskPremiums = null) {
 
 /**
  * تصنيف عميل واحد
- * بناءً على متوسط أيام التحصيل ومعدل الدوران السنوي
+ * مبني على معايير إدارة الائتمان وأعمار الديون (IFRS 9 Aging Matrix) وسرعة التحصيل
  */
-function classifyClient(result, thresholds) {
-  const dso = result.dso;
-  const collectionRate = result.collectionRate || 0;
+function classifyClient(result, thresholds = DEFAULT_THRESHOLDS) {
+  const dso = result.dso || 0;
   const isCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || dso < 1 || result.annualizedTurnover >= 365 || result.isCredit);
 
   // عميل السداد النقدي الفوري والعميل الدائن دائماً في الفئة الممتازة
   if (isCash) return 'good';
 
-  // نظام التسجيل المالي المتوازن: يجمع بين سرعة السداد والالتزام بنسبة التحصيل
-  let score = 0;
+  const aging = result.agingBuckets || {};
+  const totalDebt = result.closingBalance > 0 ? result.closingBalance : (aging.total || 0);
 
-  // 1. تقييم سرعة السداد (أيام التحصيل DSO) — حد أقصى نقطتان
-  if (dso <= thresholds.good.maxDSO) {
-    score += 2;  // سريع جداً (≤ 30 يوم)
-  } else if (dso <= thresholds.average.maxDSO) {
-    score += 1;  // سرعة مقبولة (31 - 60 يوم)
+  // حالة العميل الذي سدد كامل رصيده الختامي لكن كان له تاريخ ائتماني خلال الفترة
+  if (totalDebt <= 0) {
+    if (dso <= (thresholds?.good?.maxDSO || 30)) return 'good';
+    if (dso <= (thresholds?.average?.maxDSO || 60)) return 'average';
+    return 'poor';
   }
-  // > 60 يوم = 0 (تأخير عالي)
 
-  // 2. تقييم نسبة التحصيل والالتزام (Collection Rate) — حد أقصى نقطتان (بدلاً من تكرار مؤشر الدوران)
-  if (collectionRate >= 80) {
-    score += 2;  // التزام ممتاز (سدد 80% فأكثر من مديونيته)
-  } else if (collectionRate >= 50) {
-    score += 1;  // التزام متوسط (سدد من 50% إلى 79%)
+  // نسب شرائح أعمار الديون من إجمالي الرصيد القائم
+  const over90Ratio = (aging.over90 || 0) / totalDebt;
+  const lateRatio = ((aging.days90 || 0) + (aging.over90 || 0)) / totalDebt;
+  const currentRatio = (aging.current || 0) / totalDebt;
+
+  // 1. فئة (C - بطيء / عالي المخاطر):
+  // ديون راكدة تجاوزت 90 يوماً بنسبة ≥ 20%، أو ديون متأخرة > 60 يوماً بنسبة ≥ 50%، أو متوسط أيام التحصيل تجاوز 90 يوماً
+  if (over90Ratio >= 0.20 || lateRatio >= 0.50 || dso > 90) {
+    return 'poor';
   }
-  // أقل من 50% = 0 (معظم المديونية معلقة بالسوق)
 
-  // التصنيف النهائي:
-  // 3 أو 4 نقاط = ممتاز (A)
-  // 1 أو 2 نقاط = عادي (B)
-  // 0 نقاط = بطيء/متأخر (C)
-  if (score >= 3) return 'good';
-  if (score >= 1) return 'average';
-  return 'poor';
+  // 2. فئة (A - ممتاز / منخفض المخاطر):
+  // الديون الجارية (0-30 يوماً) تمثل 70% فأكثر، مع انعدام الديون المتأخرة (>90 يوم < 5%)، وسرعة سداد عالية
+  const goodDsoLimit = Math.max(45, (thresholds?.good?.maxDSO || 30));
+  if (currentRatio >= 0.70 && over90Ratio < 0.05 && dso <= goodDsoLimit) {
+    return 'good';
+  }
+
+  // 3. فئة (B - عادي / متوسط المخاطر):
+  // باقي الحالات المعتدلة التي تتركز في (31 - 60 يوماً) ولا تتجاوز الحدود الخطرة
+  return 'average';
 }
 
 /**

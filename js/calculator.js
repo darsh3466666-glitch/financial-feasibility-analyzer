@@ -225,15 +225,24 @@ function calculateClientMetrics(clientName, records, settings) {
   
   const qualityScore = isCreditClient ? 100 : (scoreCollection + scoreDSO + scoreTurnover);
   
-  // تقييم الجدوى المالية الشاملة (مُجدي / غير مُجدي) بدقة متناهية:
+  // تقييم الجدوى المالية والاقتصادية الشاملة (مُجدي / غير مُجدي):
   // 1. عميل الكاش الفوري والعميل الدائن دائماً مُجدي 100% لعدم وجود مخاطر أو تكلفة انتظار
-  // 2. العميل الآجل يعتبر مُجدياً إذا كانت نقاط جودته ≥ 50، ومعدل تحصيله ≥ 40%، ومتوسط تحصيله لا يتجاوز 90 يوماً
+  // 2. العميل الآجل يعتبر مُجدياً إذا كانت تكلفة انتظاره مغطاة بهامش الربح، ومتوسط ديونه الراكدة (>90 يوم) لا تتجاوز 40%، ونسبة تحصيله لا تقل عن 30%
   const isInstantCash = isCreditClient || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365);
   let isFeasible = false;
   if (isInstantCash) {
     isFeasible = true;
   } else {
-    isFeasible = (qualityScore >= 50 && collectionRate >= 40 && dso <= 90);
+    const totalRemainingDebt = closingBalance > 0 ? closingBalance : (agingBuckets?.total || 0);
+    const over90Ratio = totalRemainingDebt > 0 ? ((agingBuckets?.over90 || 0) / totalRemainingDebt) : 0;
+    
+    // نسبة تكلفة التمويل/الفرصة البديلة لفترة الائتمان
+    const carryingCostPct = (dso / 365) * depositRate;
+    const isProfitable = (grossMargin > carryingCostPct) || (dso <= 60);
+    const hasHealthyAging = over90Ratio <= 0.40;
+    const hasBasicCollection = collectionRate >= 30;
+
+    isFeasible = (isProfitable && hasHealthyAging && hasBasicCollection && dso <= 120);
   }
 
   // ═══════════════════════════════════════════════
@@ -520,7 +529,11 @@ function calculateSummary(results, settings) {
   const avgTurnover = avgDSO > 0 ? (365 / avgDSO) : (periodTurnover > 0 ? periodTurnover * (365 / periodDays) : 0);
   
   const avgRequiredMarkup = results.reduce((s, r) => s + r.requiredMarkup, 0) / totalClients;
-  const avgCollectionRate = results.reduce((s, r) => s + r.collectionRate, 0) / totalClients;
+  
+  // معدل التحصيل المرجح للمحفظة بالكامل (وزن نسبي بالمبالغ):
+  const totalAllPayments = results.reduce((s, r) => s + (r.totalPayments || 0), 0);
+  const totalAllDue = results.reduce((s, r) => s + (Math.max(0, r.openingBalance || 0) + (r.totalSales || 0)), 0);
+  const avgCollectionRate = totalAllDue > 0 ? roundTo((totalAllPayments / totalAllDue) * 100, 1) : 100;
   
   // توافق مع الإصدارات السابقة والرسوم البيانية
   const totalProfit = totalSales * (settings.profitMargin / 100);
