@@ -160,8 +160,6 @@ const Exporter = {
       // التقاط صور الرسوم البيانية مباشرة من الكانفاس الحالية (فورية وبجودة 100%)
       const dsoChartImg = document.getElementById('chart-dso')?.toDataURL('image/png') || null;
       const scatterChartImg = document.getElementById('chart-feasibility-scatter')?.toDataURL('image/png') || null;
-      const agingChartImg = document.getElementById('chart-aging')?.toDataURL('image/png') || null;
-      const barChartImg = document.getElementById('chart-feasibility')?.toDataURL('image/png') || null;
 
       // اختيار أعلى 22 عميلاً من حيث المديونية والمبيعات لعرضهم في الصفحة الثالثة
       const topClients = [...classifiedClients]
@@ -365,14 +363,6 @@ const Exporter = {
             <div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; background: #ffffff;">
               <div style="font-size: 10px; font-weight: 700; color: #334155; margin-bottom: 4px;">مؤشر الجودة والجدوى مقابل DSO</div>
               ${scatterChartImg ? `<img src="${scatterChartImg}" style="width: 100%; height: 160px; object-fit: contain;">` : '<div style="height:160px; display:flex; align-items:center; justify-content:center; color:#94a3b8;">رسم الجدوى</div>'}
-            </div>
-            <div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; background: #ffffff;">
-              <div style="font-size: 10px; font-weight: 700; color: #334155; margin-bottom: 4px;">أعمار الديون حسب التصنيف</div>
-              ${agingChartImg ? `<img src="${agingChartImg}" style="width: 100%; height: 160px; object-fit: contain;">` : '<div style="height:160px; display:flex; align-items:center; justify-content:center; color:#94a3b8;">رسم الأعمار</div>'}
-            </div>
-            <div style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; background: #ffffff;">
-              <div style="font-size: 10px; font-weight: 700; color: #334155; margin-bottom: 4px;">مقارنة نقاط الجدوى مع حد الأمان (50)</div>
-              ${barChartImg ? `<img src="${barChartImg}" style="width: 100%; height: 160px; object-fit: contain;">` : '<div style="height:160px; display:flex; align-items:center; justify-content:center; color:#94a3b8;">رسم المقارنة</div>'}
             </div>
           </div>
 
