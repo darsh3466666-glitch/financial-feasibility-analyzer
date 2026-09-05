@@ -220,8 +220,8 @@ function calculateClientMetrics(clientName, records, settings) {
   
   // تقييم الجدوى المالية الشاملة (مُجدي / غير مُجدي) بدقة متناهية:
   // 1. عميل الكاش الفوري والعميل الدائن دائماً مُجدي 100% لعدم وجود مخاطر أو تكلفة انتظار
-  // 2. العميل الآجل يعتبر مُجدياً إذا كانت نقاط جودته ≥ 50، ومعدل تحصيله ≥ 40%، ومتوسط تحصيله لا يتجاوز 90 يوماً
-  const isInstantCash = isCreditClient || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365 || closingBalance <= 0);
+  // 2. العميل الآجل يعتبر مُجدياً إذا وفقط إذا كانت نقاط جودته ≥ 50 (فوق خط الحد الأدنى)، ومعدل تحصيله ≥ 40%، وفترة تحصيله لا تتجاوز 90 يوماً
+  const isInstantCash = isCreditClient || (dso < 1 && (!avgReceivables || avgReceivables === 0));
   let isFeasible = false;
   if (isInstantCash) {
     isFeasible = true;

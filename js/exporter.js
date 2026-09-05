@@ -13,7 +13,7 @@ const Exporter = {
     // ═══ Sheet 1: جدول العملاء الشامل ═══
     const clientsData = classifiedClients.map(c => {
       const isCredit = c.isCredit || c.closingBalance < 0;
-      const isCash = (!c.avgReceivables || c.avgReceivables === 0 || c.dso === 0 || c.dso < 1 || c.annualizedTurnover >= 365 || isCredit || c.closingBalance <= 0);
+      const isCash = isCredit || c.dso === 0 || c.dso < 1 || (!c.avgReceivables && c.dso === 0) || c.annualizedTurnover >= 365;
       return {
         'اسم العميل': c.clientName,
         'التصنيف': c.classLabel,

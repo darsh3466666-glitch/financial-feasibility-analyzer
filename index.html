@@ -333,7 +333,7 @@
             <div class="chart-container">
               <div class="chart-header">
                 <span class="chart-title">أعلى 15 عميل في أيام التحصيل</span>
-                <span class="chart-subtitle">مرتبين من الأعلى للأقل</span>
+                <span class="chart-subtitle">🔴 تأخير مرتفع (&gt; 60 يوم) | 🟡 متوسط (30-60 يوم) | 🟢 سريع (≤ 30 يوم)</span>
               </div>
               <div class="chart-canvas-wrapper">
                 <canvas id="chart-dso"></canvas>
@@ -344,7 +344,7 @@
             <div class="chart-container">
               <div class="chart-header">
                 <span class="chart-title">مؤشر الجودة والجدوى مقابل أيام التحصيل</span>
-                <span class="chart-subtitle">النقاط فوق الخط الأحمر (50 نقطة) = عميل مُجدي اقتصادياً</span>
+                <span class="chart-subtitle">النقاط فوق خط الـ 50 = مُجدي اقتصادياً | 🟢 ممتاز 🟡 عادي 🔴 بطيء</span>
               </div>
               <div class="chart-canvas-wrapper">
                 <canvas id="chart-feasibility-scatter"></canvas>
@@ -355,7 +355,7 @@
             <div class="chart-container">
               <div class="chart-header">
                 <span class="chart-title">أعمار الديون حسب التصنيف</span>
-                <span class="chart-subtitle">توزيع المبالغ المستحقة حسب عمر الدين</span>
+                <span class="chart-subtitle">تدرج حراري: 🟢 آمن (0-30) | 🟡 مقبول (31-60) | 🟠 تحذير (61-90) | 🔴 خطر (&gt; 90)</span>
               </div>
               <div class="chart-canvas-wrapper">
                 <canvas id="chart-aging"></canvas>
@@ -366,7 +366,7 @@
             <div class="chart-container">
               <div class="chart-header">
                 <span class="chart-title">مقارنة نقاط الجودة والجدوى مع الحد الأدنى المقبول</span>
-                <span class="chart-subtitle">أعلى 15 عميلاً في أيام التحصيل وموقعهم من حد الجدوى (50 نقطة)</span>
+                <span class="chart-subtitle">🟢 أخضر = مُجدي ومستوفٍ للشروط (≥ 50) | 🔴 أحمر = غير مُجدي دون الحد (&lt; 50)</span>
               </div>
               <div class="chart-canvas-wrapper">
                 <canvas id="chart-feasibility"></canvas>
@@ -429,15 +429,15 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 
   <!-- Application Scripts -->
-  <script src="js/excel-parser.js?v=3.3"></script>
-  <script src="js/calculator.js?v=3.3"></script>
-  <script src="js/classifier.js?v=3.3"></script>
-  <script src="js/pricing-engine.js?v=3.3"></script>
-  <script src="js/renderer.js?v=3.3"></script>
-  <script src="js/charts.js?v=3.3"></script>
-  <script src="js/exporter.js?v=3.3"></script>
-  <script src="js/theme.js?v=3.3"></script>
-  <script src="js/app.js?v=3.3"></script>
+  <script src="js/excel-parser.js?v=3.4"></script>
+  <script src="js/calculator.js?v=3.4"></script>
+  <script src="js/classifier.js?v=3.4"></script>
+  <script src="js/pricing-engine.js?v=3.4"></script>
+  <script src="js/renderer.js?v=3.4"></script>
+  <script src="js/charts.js?v=3.4"></script>
+  <script src="js/exporter.js?v=3.4"></script>
+  <script src="js/theme.js?v=3.4"></script>
+  <script src="js/app.js?v=3.4"></script>
 
 </body>
 </html>

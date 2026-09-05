@@ -343,7 +343,7 @@ const Renderer = {
 
     container.innerHTML = sorted.map((client, index) => {
       const isCredit = client.isCredit || client.closingBalance < 0;
-      const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365 || isCredit || client.closingBalance <= 0);
+      const isCash = isCredit || client.dso === 0 || client.dso < 1 || (!client.avgReceivables && client.dso === 0) || client.annualizedTurnover >= 365;
       const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : formatNumber(client.annualizedTurnover, 1));
       const dsoText = isCredit ? '0 يوم (دائن)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`);
 
@@ -393,7 +393,7 @@ const Renderer = {
     const recommendations = generateRecommendation(client);
     const aging = client.agingBuckets || {};
     const isCredit = client.isCredit || client.closingBalance < 0;
-    const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365 || isCredit || client.closingBalance <= 0);
+    const isCash = isCredit || client.dso === 0 || client.dso < 1 || (!client.avgReceivables && client.dso === 0) || client.annualizedTurnover >= 365;
     const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : `${formatNumber(client.annualizedTurnover, 1)} مرة`);
     const dsoText = isCredit ? '0 يوم (دائن / دفعة مقدمة)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`);
     const priceVal = (client.suggestedPrice && client.suggestedPrice > 0) ? client.suggestedPrice : (client.cashPrice || 0);

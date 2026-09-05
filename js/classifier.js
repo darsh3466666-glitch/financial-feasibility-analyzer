@@ -100,12 +100,15 @@ function classifyClients(results, thresholds = null, riskPremiums = null) {
  * بناءً على متوسط أيام التحصيل ومعدل الدوران السنوي
  */
 function classifyClient(result, thresholds) {
-  const dso = result.dso;
+  const dso = result.dso || 0;
   const collectionRate = result.collectionRate || 0;
-  const isCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || dso < 1 || result.annualizedTurnover >= 365 || result.isCredit || (result.closingBalance !== null && result.closingBalance <= 0));
-
-  // عميل السداد النقدي الفوري والعميل الدائن دائماً في الفئة الممتازة
+  
+  // عميل السداد النقدي الفوري والعميل الدائن (له رصيد) دائماً في الفئة الممتازة (A)
+  const isCash = result.isCredit || (dso < 1 && (!result.avgReceivables || result.avgReceivables === 0));
   if (isCash) return 'good';
+
+  // العملاء متأخرو السداد بشدة (> 90 يوماً أو ما يعادل 3 شهور فأكثر) يُصنفون حتماً كفئة بطيئة عالية المخاطر (C)
+  if (dso > 90) return 'poor';
 
   // نظام التسجيل المالي المتوازن: يجمع بين سرعة السداد والالتزام بنسبة التحصيل
   let score = 0;
@@ -118,13 +121,18 @@ function classifyClient(result, thresholds) {
   }
   // > 60 يوم = 0 (تأخير عالي)
 
-  // 2. تقييم نسبة التحصيل والالتزام (Collection Rate) — حد أقصى نقطتان (بدلاً من تكرار مؤشر الدوران)
+  // 2. تقييم نسبة التحصيل والالتزام (Collection Rate) — حد أقصى نقطتان
   if (collectionRate >= 80) {
     score += 2;  // التزام ممتاز (سدد 80% فأكثر من مديونيته)
   } else if (collectionRate >= 50) {
     score += 1;  // التزام متوسط (سدد من 50% إلى 79%)
   }
   // أقل من 50% = 0 (معظم المديونية معلقة بالسوق)
+
+  // إذا تجاوزت أيام التحصيل 60 يوماً، فلا يجوز تصنيف العميل كممتاز إطلاقاً
+  if (dso > thresholds.average.maxDSO) {
+    return (score >= 2 && collectionRate >= 90) ? 'average' : 'poor';
+  }
 
   // التصنيف النهائي:
   // 3 أو 4 نقاط = ممتاز (A)

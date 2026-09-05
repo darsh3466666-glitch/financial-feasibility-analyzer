@@ -113,9 +113,9 @@ const ChartsManager = {
           label: 'أيام التحصيل',
           data: top.map(c => c.dso),
           backgroundColor: top.map(c => {
-            if (c.classification === 'good') return colors.good;
-            if (c.classification === 'average') return colors.average;
-            return colors.poor;
+            if (c.dso > 60) return colors.poor;     // تأخير مرتفع - خطر مالي
+            if (c.dso > 30) return colors.average;  // فترة مقبولة / متوسطة
+            return colors.good;                     // تحصيل سريع وآمن
           }),
           borderRadius: 6,
           borderSkipped: false,
@@ -133,7 +133,11 @@ const ChartsManager = {
             titleFont: { family: "'IBM Plex Sans Arabic'" },
             bodyFont: { family: "'IBM Plex Sans Arabic'" },
             callbacks: {
-              label: (ctx) => `${ctx.parsed.x.toFixed(0)} يوم`
+              label: (ctx) => {
+                const val = ctx.parsed.x;
+                const status = val > 60 ? 'تأخير عالي ⚠️' : (val > 30 ? 'فترة متوسطة ⏱️' : 'تحصيل سريع ✅');
+                return `أيام التحصيل: ${val.toFixed(0)} يوم (${status})`;
+              }
             }
           }
         },
@@ -317,8 +321,19 @@ const ChartsManager = {
     });
 
     const labels = ['A ممتاز', 'B عادي', 'C بطيء'];
-    const agingLabels = ['0-30 يوم', '31-60 يوم', '61-90 يوم', '> 90 يوم'];
-    const agingColors = [colors.good, colors.average, '#F97316', colors.poor];
+    const agingLabels = [
+      '0-30 يوم (آمن)',
+      '31-60 يوم (مقبول)',
+      '61-90 يوم (تحذير)',
+      '> 90 يوم (خطر متعثر)'
+    ];
+    // ألوان حرارية دلالية متدرجة تعبر بدقة عن مستوى خطورة عمر الدين
+    const agingColors = [
+      '#10B981', // أخضر زمردي - دين حالي آمن
+      '#F59E0B', // كهرماني - مستحق قريباً
+      '#EA580C', // برتقالي داكن - مرحلة تأخير وتحذير
+      '#EF4444'  // قرمزي - ديون قديمة متعثرة / خطر ائتماني
+    ];
 
     const getSum = (arr, key) => arr.reduce((s, c) => s + (c.agingBuckets?.[key] || 0), 0);
 
@@ -400,7 +415,7 @@ const ChartsManager = {
           {
             label: 'نقاط الجودة والجدوى (من 100)',
             data: top.map(c => c.qualityScore),
-            backgroundColor: top.map(c => c.isFeasible ? colors.good : colors.poor),
+            backgroundColor: top.map(c => (c.qualityScore >= 50 && c.isFeasible) ? colors.good : colors.poor),
             borderRadius: 4,
             maxBarThickness: 24
           },
@@ -435,7 +450,13 @@ const ChartsManager = {
             titleFont: { family: "'IBM Plex Sans Arabic'" },
             bodyFont: { family: "'IBM Plex Sans Arabic'" },
             callbacks: {
-              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} نقطة`
+              label: (ctx) => {
+                if (ctx.dataset.type === 'line') return ctx.dataset.label;
+                const score = ctx.parsed.y;
+                const client = top[ctx.dataIndex];
+                const isPass = score >= 50 && client?.isFeasible;
+                return `النقاط: ${score.toFixed(1)}/100 — ${isPass ? 'مُجدي اقتصادياً ✅' : 'غير مُجدي (دون الحد) ❌'}`;
+              }
             }
           }
         },
