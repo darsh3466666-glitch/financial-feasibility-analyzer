@@ -12,8 +12,8 @@ const Exporter = {
 
     // ═══ Sheet 1: جدول العملاء الشامل ═══
     const clientsData = classifiedClients.map(c => {
-      const isCredit = c.isCredit || c.closingBalance < 0;
-      const isCash = (!c.avgReceivables || c.avgReceivables === 0 || c.dso === 0 || c.dso < 1 || c.annualizedTurnover >= 365 || isCredit || c.closingBalance <= 0);
+      const isCredit = c.isCredit;
+      const isCash = (!c.avgReceivables || c.avgReceivables === 0 || c.dso === 0 || c.dso < 1 || c.annualizedTurnover >= 365 || isCredit);
       return {
         'اسم العميل': c.clientName,
         'التصنيف': c.classLabel,
@@ -410,7 +410,7 @@ const Exporter = {
             </thead>
             <tbody>
               ${topClients.map((c, idx) => {
-                const isCash = (!c.avgReceivables || c.avgReceivables === 0 || c.dso === 0 || c.dso < 1 || c.annualizedTurnover >= 365);
+                const isCash = (!c.avgReceivables || c.avgReceivables === 0 || c.dso === 0 || c.dso < 1 || c.annualizedTurnover >= 365 || c.isCredit);
                 const classColors = { good: '#059669', average: '#d97706', poor: '#dc2626' };
                 const cColor = classColors[c.classification] || '#475569';
                 const bgRow = idx % 2 === 0 ? '#ffffff' : '#f8fafc';

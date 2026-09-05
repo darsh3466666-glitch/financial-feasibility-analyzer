@@ -102,7 +102,7 @@ function classifyClients(results, thresholds = null, riskPremiums = null) {
 function classifyClient(result, thresholds) {
   const dso = result.dso;
   const collectionRate = result.collectionRate || 0;
-  const isCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || dso < 1 || result.annualizedTurnover >= 365 || result.isCredit || (result.closingBalance !== null && result.closingBalance <= 0));
+  const isCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || dso < 1 || result.annualizedTurnover >= 365 || result.isCredit);
 
   // عميل السداد النقدي الفوري والعميل الدائن دائماً في الفئة الممتازة
   if (isCash) return 'good';
@@ -187,7 +187,7 @@ function generateRecommendation(client) {
   }
 
   // ═══════ تسعير العميل المقترح الخاص بحالته ═══════
-  const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365);
+  const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365 || client.isCredit);
   const priceVal = (client.suggestedPrice && client.suggestedPrice > 0) ? client.suggestedPrice : (client.cashPrice || 0);
 
   if (isCash) {

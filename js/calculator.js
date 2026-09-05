@@ -112,7 +112,8 @@ function calculateClientMetrics(clientName, records, settings) {
   const closingBalance = getClosingBalance(sorted);
 
   // تحديد ما إذا كان العميل دائناً (له رصيد / دفعات مقدمة)
-  const isCreditClient = (closingBalance < 0) || records.some(r => r.isCredit && ((r.balance !== null && r.balance < 0) || (r.closingBalance !== null && r.closingBalance < 0)));
+  // يعتمد حصرياً على رصيد الإغلاق الصافي — حركة دائنة تاريخية واحدة لا تجعل العميل "دائناً"
+  const isCreditClient = (closingBalance < 0);
 
   // إجمالي المحصلات (مجموع المدفوعات)
   let totalPayments = records.reduce((sum, r) => sum + (r.paymentAmount || 0), 0);
@@ -154,6 +155,12 @@ function calculateClientMetrics(clientName, records, settings) {
       dso = roundTo(dso, 1);
       annualizedTurnover = roundTo(365 / dso, 1);
     }
+  } else if (!isCreditClient && totalSales === 0 && (closingBalance > 0 || openingBalance > 0)) {
+    // عميل خامل عليه مديونية قديمة بدون مشتريات جديدة — ليس كاشاً
+    // DSO يساوي كامل فترة التحليل لأن الدين ظل معلقاً طوال الفترة
+    dso = roundTo(periodDays, 1);
+    arTurnover = 0;
+    annualizedTurnover = 0;
   } else {
     // بيع نقدي فوري بالكامل أو عميل دائن
     dso = 0;
@@ -221,7 +228,7 @@ function calculateClientMetrics(clientName, records, settings) {
   // تقييم الجدوى المالية الشاملة (مُجدي / غير مُجدي) بدقة متناهية:
   // 1. عميل الكاش الفوري والعميل الدائن دائماً مُجدي 100% لعدم وجود مخاطر أو تكلفة انتظار
   // 2. العميل الآجل يعتبر مُجدياً إذا كانت نقاط جودته ≥ 50، ومعدل تحصيله ≥ 40%، ومتوسط تحصيله لا يتجاوز 90 يوماً
-  const isInstantCash = isCreditClient || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365 || closingBalance <= 0);
+  const isInstantCash = isCreditClient || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365);
   let isFeasible = false;
   if (isInstantCash) {
     isFeasible = true;
