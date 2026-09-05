@@ -61,6 +61,14 @@ const COLUMN_PATTERNS = {
       'رصيد آخر المدة', 'رصيد اخر المدة', 'رصيد ختامي', 'الرصيد الختامي',
       'الرصيد الحالي', 'رصيد حالي', 'closing balance', 'ending balance', 'current balance'
     ]
+  },
+  balanceType: {
+    label: 'طبيعة الرصيد (الحالة)',
+    patterns: [
+      'الحالة', 'حالة', 'طبيعة الرصيد', 'نوع الرصيد', 'طبيعة الحساب', 'نوع الحساب',
+      'status', 'balance_type', 'type', 'مدين/دائن', 'دائن/مدين', 'طبيعة', 'ح/الرصيد', 'طبيعة الحركة',
+      'بيان الرصيد', 'حالة الحساب', 'طبيعة الرصيد ع.م'
+    ]
   }
 };
 
@@ -366,6 +374,7 @@ function getContentScore(field, profile) {
   if (!profile || profile.nonEmpty === 0) return 0;
   if (field === 'clientName') return Math.min(1, (profile.textRatio * 0.8) + (profile.repeatedTextRatio * 0.2));
   if (field === 'date') return profile.dateRatio;
+  if (field === 'balanceType') return profile.textRatio;
   return profile.numericRatio;
 }
 
@@ -407,7 +416,123 @@ function getNormalizedClientKey(name) {
 }
 
 /**
- * تطبيق الربط وتحويل البيانات مع دمج ذكي لأسماء العملاء
+ * استكشاف تلقائي لخانات طبيعة الرصيد (مدين / دائن / الحالة) في الشيت بدون الحاجة لتدخل يدوي
+ */
+function detectBalanceTypeColumn(sheet, mapping = {}) {
+  // 1. إذا تم اختياره صراحة
+  if (mapping.balanceType && sheet.headers?.includes(mapping.balanceType)) {
+    return mapping.balanceType;
+  }
+
+  // استبعاد الأعمدة المحجوزة للمبالغ وأسماء العملاء
+  const reserved = new Set([
+    mapping.clientName,
+    mapping.invoiceAmount,
+    mapping.paymentAmount,
+    mapping.balance,
+    mapping.openingBalance,
+    mapping.closingBalance
+  ].filter(Boolean));
+
+  // 2. إذا تم اقتراحه من الملف التعريفي للشيت بشرط ألا يكون محجوزاً
+  if (sheet.profile?.suggestedMapping?.balanceType && sheet.headers?.includes(sheet.profile.suggestedMapping.balanceType)) {
+    const candidate = sheet.profile.suggestedMapping.balanceType;
+    if (!reserved.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  // 3. مطابقة العناوين ذات الصلة المباشرة بـ (الحالة / طبيعة الرصيد)
+  const statusPatterns = [
+    'الحالة', 'الحاله', 'طبيعة الرصيد', 'طبيعه الرصيد', 'نوع الرصيد',
+    'طبيعة الحساب', 'طبيعه الحساب', 'نوع الحساب', 'حالة الحساب',
+    'status', 'balance_type', 'type', 'طبيعة', 'طبيعه', 'ح/الرصيد'
+  ];
+
+  if (Array.isArray(sheet.headers)) {
+    for (const h of sheet.headers) {
+      if (reserved.has(h)) continue;
+      if (getHeaderScore(h, statusPatterns) >= 0.55) {
+        return h;
+      }
+    }
+  }
+
+  // 4. الفحص الميداني لمحتويات الأعمدة غير المحجوزة لاكتشاف أي عمود يحوي نص "مدين" أو "دائن"
+  if (Array.isArray(sheet.headers) && Array.isArray(sheet.data)) {
+    const sample = sheet.data.slice(0, 50);
+    for (const h of sheet.headers) {
+      if (reserved.has(h)) continue;
+      let debitCreditCount = 0;
+      for (const row of sample) {
+        const raw = String(row[h] || '').trim();
+        const val = normalizeText(raw);
+        if (
+          val.includes('مدين') || 
+          val.includes('داين') || 
+          val.includes('دائن') || 
+          raw.includes('دائن') ||
+          raw.includes('مدين') ||
+          val === 'debit' || 
+          val === 'credit' || 
+          val === 'cr' || 
+          val === 'dr' || 
+          val === 'له' || 
+          val === 'عليه'
+        ) {
+          debitCreditCount++;
+        }
+      }
+      if (debitCreditCount >= 1) {
+        return h;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * فحص ما إذا كان الصف أو الرصيد دائناً (له رصيد / دفعة مقدمة) أم مديناً (عليه مديونية)
+ */
+function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance) {
+  if (balanceTypeCol && row[balanceTypeCol] !== null && row[balanceTypeCol] !== undefined) {
+    const raw = String(row[balanceTypeCol]).trim();
+    const norm = normalizeText(raw);
+    
+    // التحقق من الدائن بكل الأشكال الإملائية بعد التطبيع وبدونه
+    if (
+      norm.includes('داين') || 
+      norm.includes('دائن') || 
+      raw.includes('دائن') ||
+      norm.includes('credit') || 
+      norm === 'cr' || 
+      norm === 'له' || 
+      norm.includes('دفعه مقدمه') || 
+      norm.includes('مقدم')
+    ) {
+      return true;
+    }
+    
+    // التحقق من المدين
+    if (
+      norm.includes('مدين') || 
+      raw.includes('مدين') ||
+      norm.includes('debit') || 
+      norm === 'dr' || 
+      norm === 'عليه'
+    ) {
+      return false;
+    }
+  }
+
+  // إذا لم يتوفر عمود الحالة أو كانت الخلية فارغة، نعتمد على الإشارة السالبة إن وجدت
+  if (balance !== null && balance < 0) return true;
+  if (closingBalance !== null && closingBalance < 0) return true;
+  return false;
+}
+
+/**
+ * تطبيق الربط وتحويل البيانات مع دمج ذكي لأسماء العملاء واكتشاف تلقائي للدائن والمدين
  * @param {Array<Object>} sheetsData - بيانات الشيتات
  * @param {Object} sheetMappings - ربط الأعمدة
  * @returns {Object} البيانات المحللة
@@ -421,6 +546,9 @@ function applyMapping(sheetsData, sheetMappings) {
     
     // إذا لم يتم ربط اسم العميل لهذا الشيت، نتخطاه
     if (!mapping.clientName) return;
+
+    // استكشاف تلقائي لعمود الحالة (مدين / دائن) بدون إلزام المستخدم بإدخاله في الواجهة
+    const balanceTypeCol = detectBalanceTypeColumn(sheet, mapping);
 
     for (const row of sheet.data) {
       const rawName = row[mapping.clientName];
@@ -448,14 +576,23 @@ function applyMapping(sheetsData, sheetMappings) {
       const openingBalance = mapping.openingBalance ? parseNumber(row[mapping.openingBalance]) : null;
       const closingBalance = mapping.closingBalance ? parseNumber(row[mapping.closingBalance]) : null;
 
+      // تحديد هل الحركة أو الرصيد دائن (له فلوس / دفعة مقدمة) أم مدين (عليه مديونية)
+      const isCredit = checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance);
+
+      const signedBalance = balance !== null ? (isCredit ? -Math.abs(balance) : Math.abs(balance)) : null;
+      const signedOpeningBalance = openingBalance !== null ? (isCredit ? -Math.abs(openingBalance) : Math.abs(openingBalance)) : null;
+      const signedClosingBalance = closingBalance !== null ? (isCredit ? -Math.abs(closingBalance) : Math.abs(closingBalance)) : null;
+
       clientEntry.records.push({
         clientName: clientEntry.displayName,
         date,
         invoiceAmount: invoiceAmount,
         paymentAmount: paymentAmount,
-        balance: balance,
-        openingBalance,
-        closingBalance,
+        balance: signedBalance,
+        openingBalance: signedOpeningBalance,
+        closingBalance: signedClosingBalance,
+        isCredit: isCredit,
+        balanceType: isCredit ? 'credit' : 'debit',
         source: `${sheet.fileName} / ${sheet.sheetName}`
       });
     }

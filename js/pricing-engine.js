@@ -89,8 +89,8 @@ const PricingEngine = {
       // بناءً على طلب المستخدم الحرفي:
       // نسبة الزيادة = فائدة البنك (على الإيداع) ÷ معدل الدوران السنوي للعميل
       let markupPct = 0;
-      if (client.dso === 0 || client.dso < 1 || client.avgReceivables === 0 || client.annualizedTurnover >= 365) {
-        markupPct = 0; // عميل كاش فوري
+      if (client.dso === 0 || client.dso < 1 || client.avgReceivables === 0 || client.annualizedTurnover >= 365 || client.isCredit || client.closingBalance <= 0) {
+        markupPct = 0; // عميل كاش فوري أو دائن (له رصيد)
       } else if (client.annualizedTurnover > 0) {
         markupPct = depositRate / client.annualizedTurnover;
       } else if (client.dso > 0) {

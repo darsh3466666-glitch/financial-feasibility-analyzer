@@ -12,17 +12,19 @@ const Exporter = {
 
     // ═══ Sheet 1: جدول العملاء الشامل ═══
     const clientsData = classifiedClients.map(c => {
-      const isCash = (!c.avgReceivables || c.avgReceivables === 0 || c.dso === 0 || c.dso < 1 || c.annualizedTurnover >= 365);
+      const isCredit = c.isCredit || c.closingBalance < 0;
+      const isCash = (!c.avgReceivables || c.avgReceivables === 0 || c.dso === 0 || c.dso < 1 || c.annualizedTurnover >= 365 || isCredit || c.closingBalance <= 0);
       return {
         'اسم العميل': c.clientName,
         'التصنيف': c.classLabel,
+        'طبيعة الرصيد': isCredit ? 'دائن (له رصيد / دفعة مقدمة)' : 'مدين (عليه مديونية)',
         'الجدوى': c.isFeasible ? 'مُجدي' : 'غير مُجدي',
         'إجمالي المبيعات': c.totalSales,
         'رصيد أول المدة': c.openingBalance,
         'رصيد آخر المدة': c.closingBalance,
         'متوسط المدينين': c.avgReceivables,
-        'معدل الدوران السنوي': isCash ? 'نقدي ∞' : c.annualizedTurnover,
-        'أيام التحصيل (DSO)': isCash ? '0 (سداد فوري)' : c.dso,
+        'معدل الدوران السنوي': isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : c.annualizedTurnover),
+        'أيام التحصيل (DSO)': isCredit ? '0 (دائن)' : (isCash ? '0 (سداد فوري)' : c.dso),
         'نسبة الزيادة المقترحة %': isCash ? 0 : (c.totalMarkupPct || 0),
         'السعر المقترح للوحدة (جنيه)': (c.suggestedPrice && c.suggestedPrice > 0) ? c.suggestedPrice : (c.cashPrice || 0),
         'معدل التحصيل %': c.collectionRate,

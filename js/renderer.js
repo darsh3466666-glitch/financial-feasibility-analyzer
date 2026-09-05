@@ -151,10 +151,14 @@ const Renderer = {
      ═══════════════════════════════════════════ */
   renderAgingReport(summary) {
     const container = document.getElementById('aging-content');
-    if (!container) return;
+    if (!container || !summary || !summary.totalAging) return;
 
     const aging = summary.totalAging;
     const total = aging.total || 1; // تجنب القسمة على صفر
+    const netBalance = summary.netMarketBalance !== undefined ? summary.netMarketBalance : (summary.totalDebt ?? aging.total);
+    const grossReceivables = summary.grossReceivables || aging.total;
+    const creditBalances = summary.creditBalances || 0;
+    const creditClientsCount = summary.creditClientsCount || 0;
 
     const buckets = [
       { label: '0 - 30 يوم', amount: aging.current, pct: (aging.current / total * 100), color: 'var(--accent-success)' },
@@ -165,11 +169,23 @@ const Renderer = {
 
     let html = `
       <div class="card">
-        <div class="aging-summary">
+        <div class="aging-summary" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
           <div class="aging-total">
-            <span class="aging-total-label">إجمالي المبالغ المستحقة</span>
-            <span class="aging-total-value">${formatNumber(aging.total)} جنيه</span>
+            <span class="aging-total-label">صافي رصيد السوق (مطابق لبرنامج ERP)</span>
+            <span class="aging-total-value" style="color: var(--accent-primary); font-size: 1.6rem; font-weight: 800;">${formatNumber(netBalance)} جنيه</span>
+            <span style="display: block; font-size: 0.82rem; margin-top: 5px; color: var(--text-secondary);">
+              إجمالي المدينين: <strong style="color: var(--text-primary);">${formatNumber(grossReceivables)}</strong> جنيه
+              ${creditBalances > 0 ? ` | إجمالي الدائنين (دفعات مقدمة): <strong style="color: var(--accent-success);">${formatNumber(creditBalances)}</strong> جنيه` : ''}
+            </span>
           </div>
+
+          ${creditBalances > 0 ? `
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid var(--accent-success); border-radius: var(--radius-md); padding: 8px 16px; text-align: right;">
+            <div style="font-size: 0.8rem; color: var(--accent-success); font-weight: 600;">أرصدة العملاء الدائنة (دفعات مقدمة)</div>
+            <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent-success);">${formatNumber(creditBalances)} جنيه</div>
+            <div style="font-size: 0.72rem; color: var(--text-secondary);">${formatNumber(creditClientsCount)} عميل دائن (سداد مقدم)</div>
+          </div>
+          ` : ''}
         </div>
 
         <!-- شريط الأعمار المرئي -->
@@ -326,9 +342,10 @@ const Renderer = {
     }
 
     container.innerHTML = sorted.map((client, index) => {
-      const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365);
-      const turnoverText = isCash ? 'نقدي ∞' : formatNumber(client.annualizedTurnover, 1);
-      const dsoText = isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`;
+      const isCredit = client.isCredit || client.closingBalance < 0;
+      const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365 || isCredit || client.closingBalance <= 0);
+      const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : formatNumber(client.annualizedTurnover, 1));
+      const dsoText = isCredit ? '0 يوم (دائن)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`);
 
       let classColor = 'var(--accent-success)';
       if (client.classification === 'average') classColor = 'var(--accent-warning)';
@@ -345,6 +362,7 @@ const Renderer = {
       <tr class="animate-in" style="animation-delay: ${Math.min(index * 30, 300)}ms">
         <td class="client-name" data-client="${escapeHTML(client.clientName)}" onclick="App.showClientDetail('${escapeHTML(client.clientName)}')" title="اضغط لعرض التفاصيل">
           ${escapeHTML(client.clientName)}
+          ${isCredit ? ` <span class="badge badge-good" style="font-size:0.65rem; padding: 2px 6px; margin-right: 4px;" title="رصيد دائن / دفعة مقدمة">دائن</span>` : ''}
         </td>
         <td class="num-cell">${formatNumber(client.totalSales)}</td>
         <td class="num-cell">${formatNumber(client.avgReceivables)}</td>
@@ -374,9 +392,10 @@ const Renderer = {
 
     const recommendations = generateRecommendation(client);
     const aging = client.agingBuckets || {};
-    const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365);
-    const turnoverText = isCash ? 'نقدي ∞' : `${formatNumber(client.annualizedTurnover, 1)} مرة`;
-    const dsoText = isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`;
+    const isCredit = client.isCredit || client.closingBalance < 0;
+    const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365 || isCredit || client.closingBalance <= 0);
+    const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : `${formatNumber(client.annualizedTurnover, 1)} مرة`);
+    const dsoText = isCredit ? '0 يوم (دائن / دفعة مقدمة)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`);
     const priceVal = (client.suggestedPrice && client.suggestedPrice > 0) ? client.suggestedPrice : (client.cashPrice || 0);
 
     let classColor = 'var(--accent-success)';
@@ -402,7 +421,7 @@ const Renderer = {
         </div>
         <div class="client-detail-item">
           <span class="detail-label">رصيد آخر المدة</span>
-          <span class="detail-value">${formatNumber(client.closingBalance)} جنيه</span>
+          <span class="detail-value">${formatNumber(client.closingBalance)} جنيه ${isCredit ? '<span style="color:var(--accent-success); font-weight:600; font-size:0.8rem;"> (دائن - له رصيد)</span>' : ''}</span>
         </div>
         <div class="client-detail-item">
           <span class="detail-label">متوسط المدينين</span>

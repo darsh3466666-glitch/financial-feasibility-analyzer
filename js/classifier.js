@@ -102,9 +102,9 @@ function classifyClients(results, thresholds = null, riskPremiums = null) {
 function classifyClient(result, thresholds) {
   const dso = result.dso;
   const collectionRate = result.collectionRate || 0;
-  const isCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || dso < 1 || result.annualizedTurnover >= 365);
+  const isCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || dso < 1 || result.annualizedTurnover >= 365 || result.isCredit || (result.closingBalance !== null && result.closingBalance <= 0));
 
-  // عميل السداد النقدي الفوري دائماً في الفئة الممتازة
+  // عميل السداد النقدي الفوري والعميل الدائن دائماً في الفئة الممتازة
   if (isCash) return 'good';
 
   // نظام التسجيل المالي المتوازن: يجمع بين سرعة السداد والالتزام بنسبة التحصيل

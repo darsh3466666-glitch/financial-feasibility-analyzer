@@ -68,8 +68,8 @@ function calculateAll(parsedData, settings) {
 
     const result = calculateClientMetrics(clientName, records, effectiveSettings);
     
-    // شرطك الصريح: تجاهل أي عميل لم يسحب أي فواتير (مبيعاته = 0) خلال هذه الفترة
-    if (!result || result.totalSales <= 0) {
+    // استبعاد الحسابات الصفرية الخاملة (مبيعات = 0 وبدون أي رصيد مدين أو دائن)
+    if (!result || (result.totalSales <= 0 && (!result.closingBalance || Math.abs(result.closingBalance) === 0))) {
       continue;
     }
 
@@ -111,20 +111,24 @@ function calculateClientMetrics(clientName, records, settings) {
   const openingBalance = getOpeningBalance(sorted);
   const closingBalance = getClosingBalance(sorted);
 
+  // تحديد ما إذا كان العميل دائناً (له رصيد / دفعات مقدمة)
+  const isCreditClient = (closingBalance < 0) || records.some(r => r.isCredit && ((r.balance !== null && r.balance < 0) || (r.closingBalance !== null && r.closingBalance < 0)));
+
   // إجمالي المحصلات (مجموع المدفوعات)
   let totalPayments = records.reduce((sum, r) => sum + (r.paymentAmount || 0), 0);
 
   // إذا كانت المدفوعات صفر ورصيد الإغلاق صفر أو أقل، فالعميل سدد مبيعاته فوراً كاش
   if (totalPayments === 0) {
-    const inferred = openingBalance + totalSales - closingBalance;
+    const inferred = Math.max(0, openingBalance) + totalSales - Math.max(0, closingBalance);
     if (inferred > 0) totalPayments = inferred;
   }
 
   // متوسط المدينين وفق المعايير المالية الحديثة (متوسط الرصيد اليومي المرجح بالزمن)
-  const avgReceivables = calculateAverageReceivables(
+  // العميل الدائن رصيد مديونيته للمنشأة = 0
+  const avgReceivables = isCreditClient ? 0 : calculateAverageReceivables(
     sorted,
-    openingBalance,
-    closingBalance,
+    Math.max(0, openingBalance),
+    Math.max(0, closingBalance),
     totalSales,
     periodDays,
     settings.globalStartDate,
@@ -132,11 +136,11 @@ function calculateClientMetrics(clientName, records, settings) {
   );
 
   // حساب أيام التحصيل (DSO) ومعدل الدوران وفق المعايير المالية المعتمدة:
-  let arTurnover = 0;
+  let arTurnover = 365;
   let dso = 0;
-  let annualizedTurnover = 0;
+  let annualizedTurnover = 365;
 
-  if (totalSales > 0 && avgReceivables > 0) {
+  if (!isCreditClient && totalSales > 0 && avgReceivables > 0) {
     arTurnover = totalSales / avgReceivables;
     dso = periodDays / arTurnover;
 
@@ -151,7 +155,7 @@ function calculateClientMetrics(clientName, records, settings) {
       annualizedTurnover = roundTo(365 / dso, 1);
     }
   } else {
-    // بيع نقدي فوري بالكامل
+    // بيع نقدي فوري بالكامل أو عميل دائن
     dso = 0;
     arTurnover = 365;
     annualizedTurnover = 365;
@@ -160,15 +164,18 @@ function calculateClientMetrics(clientName, records, settings) {
   // معدل التحصيل (Collection Rate)
   // Collection_Rate % = (إجمالي المحصّل / إجمالي المستحق) × 100
   // إجمالي المستحق = رصيد أول المدة + المبيعات الآجلة
-  const totalDue = openingBalance + totalSales;
-  let collectionRate = 0;
+  const totalDue = Math.max(0, openingBalance) + totalSales;
+  let collectionRate = isCreditClient ? 100 : 0;
   if (totalDue > 0) {
-    collectionRate = (totalPayments / totalDue) * 100;
+    collectionRate = Math.min(100, Math.round(((totalPayments / totalDue) * 100) * 10) / 10);
+    if (isCreditClient) collectionRate = 100;
   }
 
-  // تحليل أعمار الديون (Aging Buckets)
+  // تحليل أعمار الديون (Aging Buckets) - العميل الدائن ليس عليه ديون معمرة
   const agingReferenceDate = settings.globalEndDate || new Date();
-  const agingBuckets = calculateAgingBuckets(sorted, agingReferenceDate, closingBalance);
+  const agingBuckets = isCreditClient 
+    ? { current: 0, days30: 0, days60: 0, days90: 0, over90: 0, total: 0 }
+    : calculateAgingBuckets(sorted, agingReferenceDate, Math.max(0, closingBalance));
 
   // ═══════════════════════════════════════════════
   // القسم الثاني: الجدوى وتكلفة الفرصة البديلة
@@ -185,12 +192,12 @@ function calculateClientMetrics(clientName, records, settings) {
 
   // 1. حساب "الخسارة الخفية" (تكلفة الأموال المعطلة كنسبة من المبيعات)
   // النسبة = (أيام التحصيل / 365) × سعر الفائدة البنكي (تكلفة الفرصة البديلة)
-  const hiddenLossPct = (dso / 365) * depositRate;
+  const hiddenLossPct = isCreditClient ? 0 : ((dso / 365) * depositRate);
 
   // الخسارة الخفية كمبلغ (قيمة الفرصة البديلة الضائعة عن فترة التحليل بالكامل)
-  const opportunityCost = avgReceivables * (depositRate / 100) * (periodDays / 365);
+  const opportunityCost = isCreditClient ? 0 : (avgReceivables * (depositRate / 100) * (periodDays / 365));
   // تكلفة التمويل الفعلية (في حال الاقتراض عن فترة التحليل بالكامل)
-  const financingCost = avgReceivables * (lendingRate / 100) * (periodDays / 365);
+  const financingCost = isCreditClient ? 0 : (avgReceivables * (lendingRate / 100) * (periodDays / 365));
 
   // حسابات الجدوى القديمة للتوافق مع الرسوم البيانية والتصدير
   const grossMargin = profitMargin;
@@ -209,12 +216,12 @@ function calculateClientMetrics(clientName, records, settings) {
   // العميل المثالي يدور ماله 12 مرة سنوياً (شهرياً)
   const scoreTurnover = Math.min(25, (annualizedTurnover / 12) * 25);
   
-  const qualityScore = scoreCollection + scoreDSO + scoreTurnover;
+  const qualityScore = isCreditClient ? 100 : (scoreCollection + scoreDSO + scoreTurnover);
   
   // تقييم الجدوى المالية الشاملة (مُجدي / غير مُجدي) بدقة متناهية:
-  // 1. عميل الكاش الفوري دائماً مُجدي 100% لعدم وجود مخاطر أو تكلفة انتظار
+  // 1. عميل الكاش الفوري والعميل الدائن دائماً مُجدي 100% لعدم وجود مخاطر أو تكلفة انتظار
   // 2. العميل الآجل يعتبر مُجدياً إذا كانت نقاط جودته ≥ 50، ومعدل تحصيله ≥ 40%، ومتوسط تحصيله لا يتجاوز 90 يوماً
-  const isInstantCash = (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365);
+  const isInstantCash = isCreditClient || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365 || closingBalance <= 0);
   let isFeasible = false;
   if (isInstantCash) {
     isFeasible = true;
@@ -227,10 +234,10 @@ function calculateClientMetrics(clientName, records, settings) {
   // ═══════════════════════════════════════════════
 
   // نسبة الزيادة المطلوبة (تكلفة التمويل كنسبة مئوية)
-  const financingCostPct = (lendingRate / 365) * dso;
+  const financingCostPct = isCreditClient ? 0 : ((lendingRate / 365) * dso);
 
   // فجوة الجدوى القديمة (للتوافق مع الواجهة الحالية)
-  const requiredMarkup = annualizedTurnover > 0 ? lendingRate / annualizedTurnover : 0;
+  const requiredMarkup = (isCreditClient || annualizedTurnover <= 0) ? 0 : (lendingRate / annualizedTurnover);
   const feasibilityGap = profitMargin - requiredMarkup;
 
   return {
@@ -247,6 +254,9 @@ function calculateClientMetrics(clientName, records, settings) {
     dso: roundTo(dso, 1),
     collectionRate: roundTo(collectionRate, 1),
     agingBuckets,
+    isCredit: isCreditClient,
+    creditAmount: isCreditClient ? Math.abs(closingBalance) : 0,
+    statusLabel: isCreditClient ? 'دائن (له رصيد)' : 'مدين (عليه مديونية)',
 
     // القسم الثاني — الجدوى وجودة العميل
     hurdleRate: roundTo(hurdleRate, 2),
@@ -360,10 +370,10 @@ function calculateAgingBuckets(sortedRecords, today, remainingDebt) {
 function getOpeningBalance(sortedRecords) {
   for (const record of sortedRecords) {
     if (record.openingBalance !== null && record.openingBalance !== undefined && !isNaN(record.openingBalance)) {
-      return Math.max(0, record.openingBalance);
+      return roundTo(record.openingBalance, 2);
     }
     if (record.balance !== null && record.balance !== undefined && !isNaN(record.balance)) {
-      return Math.max(0, record.balance);
+      return roundTo(record.balance, 2);
     }
   }
   return 0;
@@ -376,10 +386,10 @@ function getClosingBalance(sortedRecords) {
   for (let i = sortedRecords.length - 1; i >= 0; i--) {
     const record = sortedRecords[i];
     if (record.closingBalance !== null && record.closingBalance !== undefined && !isNaN(record.closingBalance)) {
-      return Math.max(0, record.closingBalance);
+      return roundTo(record.closingBalance, 2);
     }
     if (record.balance !== null && record.balance !== undefined && !isNaN(record.balance)) {
-      return Math.max(0, record.balance);
+      return roundTo(record.balance, 2);
     }
   }
   return 0;
@@ -488,7 +498,13 @@ function calculateSummary(results, settings) {
   const totalClients = results.length;
   const totalSales = results.reduce((s, r) => s + r.totalSales, 0);
   const totalReceivables = results.reduce((s, r) => s + r.avgReceivables, 0);
-  const totalDebt = results.reduce((s, r) => s + r.closingBalance, 0); // إجمالي المديونية الفعلية (أرصدة آخر المدة)
+  
+  // حساب المديونيات والأرصدة الدائنة وصافي رصيد السوق بدقة مطلقة
+  const grossReceivables = results.filter(r => r.closingBalance > 0).reduce((s, r) => s + r.closingBalance, 0);
+  const creditBalances = results.filter(r => r.closingBalance < 0).reduce((s, r) => s + Math.abs(r.closingBalance), 0);
+  const creditClientsCount = results.filter(r => r.closingBalance < 0).length;
+  const netMarketBalance = grossReceivables - creditBalances; // صافي رصيد السوق مطابق لمعادلة ERP (مدين - دائن)
+  const totalDebt = netMarketBalance;
   
   const periodDays = results.length > 0 ? results[0].periodDays : 365;
   const periodTurnover = totalReceivables > 0 ? totalSales / totalReceivables : 0;
@@ -514,20 +530,27 @@ function calculateSummary(results, settings) {
 
   // أعمار الديون الإجمالية
   const totalAging = {
-    current: results.reduce((s, r) => s + (r.agingBuckets?.current || 0), 0),
-    days30: results.reduce((s, r) => s + (r.agingBuckets?.days30 || 0), 0),
-    days60: results.reduce((s, r) => s + (r.agingBuckets?.days60 || 0), 0),
-    days90: results.reduce((s, r) => s + (r.agingBuckets?.days90 || 0), 0),
-    over90: results.reduce((s, r) => s + (r.agingBuckets?.over90 || 0), 0),
+    current: roundTo(results.reduce((s, r) => s + (r.agingBuckets?.current || 0), 0), 2),
+    days30: roundTo(results.reduce((s, r) => s + (r.agingBuckets?.days30 || 0), 0), 2),
+    days60: roundTo(results.reduce((s, r) => s + (r.agingBuckets?.days60 || 0), 0), 2),
+    days90: roundTo(results.reduce((s, r) => s + (r.agingBuckets?.days90 || 0), 0), 2),
+    over90: roundTo(results.reduce((s, r) => s + (r.agingBuckets?.over90 || 0), 0), 2),
+    grossReceivables: roundTo(grossReceivables, 2),
+    creditBalances: roundTo(creditBalances, 2),
+    netBalance: roundTo(netMarketBalance, 2),
     total: 0
   };
-  totalAging.total = totalAging.current + totalAging.days30 + totalAging.days60 + totalAging.days90 + totalAging.over90;
+  totalAging.total = roundTo(totalAging.current + totalAging.days30 + totalAging.days60 + totalAging.days90 + totalAging.over90, 2);
 
   return {
     totalClients,
     totalSales: roundTo(totalSales, 2),
     totalReceivables: roundTo(totalReceivables, 2),
     totalDebt: roundTo(totalDebt, 2),
+    grossReceivables: roundTo(grossReceivables, 2),
+    creditBalances: roundTo(creditBalances, 2),
+    creditClientsCount,
+    netMarketBalance: roundTo(netMarketBalance, 2),
     avgDSO: roundTo(avgDSO, 1),
     avgTurnover: roundTo(avgTurnover, 2),
     avgRequiredMarkup: roundTo(avgRequiredMarkup, 2),
@@ -560,14 +583,15 @@ function calculateSalesByClassification(classifiedClients) {
 
   const totalSales = classifiedClients.reduce((s, c) => s + c.totalSales, 0);
   const totalReceivables = classifiedClients.reduce((s, c) => s + c.avgReceivables, 0);
-  const totalAllDebt = classifiedClients.reduce((s, c) => s + c.closingBalance, 0);
+  const totalAllDebt = classifiedClients.filter(c => c.closingBalance > 0).reduce((s, c) => s + c.closingBalance, 0);
   const totalAllPayments = classifiedClients.reduce((s, c) => s + c.totalPayments, 0);
 
   const result = {};
   for (const [key, clients] of Object.entries(groups)) {
     const groupSales = clients.reduce((s, c) => s + c.totalSales, 0);
     const groupReceivables = clients.reduce((s, c) => s + c.avgReceivables, 0);
-    const groupRemainingDebt = clients.reduce((s, c) => s + c.closingBalance, 0);
+    const groupRemainingDebt = clients.filter(c => c.closingBalance > 0).reduce((s, c) => s + c.closingBalance, 0);
+    const groupCreditBalance = clients.filter(c => c.closingBalance < 0).reduce((s, c) => s + Math.abs(c.closingBalance), 0);
     const groupProfit = clients.reduce((s, c) => s + (c.totalSales * (c.currentMargin / 100)), 0);
     const groupCashSales = clients.reduce((s, c) => s + c.totalPayments, 0);
     
@@ -584,7 +608,8 @@ function calculateSalesByClassification(classifiedClients) {
       totalSales: roundTo(groupSales, 2),
       totalReceivables: roundTo(groupReceivables, 2),
       totalCashSales: roundTo(groupCashSales, 2),
-      totalCreditSales: roundTo(groupRemainingDebt, 2), // المديونية المتبقية الفعلية (closingBalance)
+      totalCreditSales: roundTo(groupRemainingDebt, 2), // المديونية المتبقية الفعلية الموجبة
+      creditBalance: roundTo(groupCreditBalance, 2), // أرصدة العملاء الدائنين (دفعات مقدمة)
       cashSalesPercentage: totalAllPayments > 0 ? roundTo((groupCashSales / totalAllPayments) * 100, 1) : 0,
       creditSalesPercentage: totalAllDebt > 0 ? roundTo((groupRemainingDebt / totalAllDebt) * 100, 1) : 0,
       salesPercentage: totalSales > 0 ? roundTo((groupSales / totalSales) * 100, 1) : 0,
