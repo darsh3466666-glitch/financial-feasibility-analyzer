@@ -101,19 +101,18 @@ function classifyClients(results, thresholds = null, riskPremiums = null) {
  */
 function classifyClient(result, thresholds = DEFAULT_THRESHOLDS) {
   const dso = result.dso || 0;
-  const isCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || dso < 1 || result.annualizedTurnover >= 365 || result.isCredit);
-
-  // عميل السداد النقدي الفوري والعميل الدائن دائماً في الفئة الممتازة
-  if (isCash) return 'good';
-
   const aging = result.agingBuckets || {};
   const totalDebt = result.closingBalance > 0 ? result.closingBalance : (aging.total || 0);
 
+  const isCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || dso < 1 || result.annualizedTurnover >= 365 || result.isCredit || (totalDebt <= 0 && result.collectionRate >= 98));
+
+  // عميل السداد النقدي الفوري والعميل الدائن ومصفّي المديونية بالكامل دائماً في الفئة الممتازة
+  if (isCash) return 'good';
+
   // حالة العميل الذي سدد كامل رصيده الختامي لكن كان له تاريخ ائتماني خلال الفترة
   if (totalDebt <= 0) {
-    if (dso <= (thresholds?.good?.maxDSO || 30)) return 'good';
-    if (dso <= (thresholds?.average?.maxDSO || 60)) return 'average';
-    return 'poor';
+    if (result.collectionRate >= 90 || dso <= (thresholds?.good?.maxDSO || 30)) return 'good';
+    return 'average';
   }
 
   // نسب شرائح أعمار الديون من إجمالي الرصيد القائم
