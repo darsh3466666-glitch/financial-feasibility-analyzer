@@ -78,8 +78,13 @@ function calculateAll(parsedData, settings) {
 
     const result = calculateClientMetrics(clientName, records, effectiveSettings);
     
-    // استبعاد الحسابات الصفرية الخاملة (مبيعات = 0 وبدون أي رصيد مدين أو دائن)
-    if (!result || (result.totalSales <= 0 && (!result.closingBalance || Math.abs(result.closingBalance) === 0))) {
+    // استبعاد الحسابات الصفرية الخاملة بالكامل (مبيعات = 0، وأرصدة = 0، وبدون أي سدادات)
+    if (!result || (
+      result.totalSales <= 0 &&
+      (!result.closingBalance || Math.abs(result.closingBalance) === 0) &&
+      (!result.openingBalance || Math.abs(result.openingBalance) === 0) &&
+      (!result.totalPayments || Math.abs(result.totalPayments) === 0)
+    )) {
       continue;
     }
 
@@ -93,8 +98,24 @@ function calculateAll(parsedData, settings) {
  * حساب المؤشرات المالية لعميل واحد — الأقسام الثلاثة
  */
 function calculateClientMetrics(clientName, records, settings) {
-  // ترتيب السجلات حسب التاريخ
-  const sorted = [...records].sort((a, b) => a.date - b.date);
+  // ترتيب السجلات: حسب التاريخ، وإن لم تكن هناك تواريخ فرسيد أول المدة يأتي أولاً وآخر المدة يأتي أخيراً
+  const sorted = [...records].sort((a, b) => {
+    if (a.date instanceof Date && b.date instanceof Date) {
+      return a.date - b.date;
+    }
+    if (a.date instanceof Date) return 1;
+    if (b.date instanceof Date) return -1;
+
+    // إذا لم تكن هناك تواريخ: سجل رصيد أول المدة يأتي أولاً
+    if (a.openingBalance !== null && b.openingBalance === null) return -1;
+    if (b.openingBalance !== null && a.openingBalance === null) return 1;
+
+    // سجل رصيد آخر المدة يأتي أخيراً
+    if (a.closingBalance !== null && b.closingBalance === null) return 1;
+    if (b.closingBalance !== null && a.closingBalance === null) return -1;
+
+    return 0;
+  });
 
   // حساب الفترة
   // الصواب في التحليل المالي هو استخدام فترة التحليل الإجمالية (Period) الثابتة لجميع العملاء
@@ -201,14 +222,13 @@ function calculateClientMetrics(clientName, records, settings) {
       dso = roundTo(dso, 1);
       annualizedTurnover = roundTo(365 / dso, 1);
     }
-  } else if (totalSales === 0 && (closingBalance > 0 || openingBalance > 0)) {
-    // عميل خامل عليه مديونية قديمة بدون مشتريات جديدة — ليس كاشاً
-    // DSO يساوي كامل فترة التحليل لأن الدين ظل معلقاً طوال الفترة
+  } else if (totalSales === 0 && closingBalance > 0) {
+    // عميل عليه مديونية متبقية بدون مشتريات جديدة — الدين ظل معلقاً طوال الفترة
     dso = roundTo(periodDays, 1);
     arTurnover = 0;
     annualizedTurnover = 0;
   } else {
-    // رصيد صفر ومبيعات صفر
+    // رصيد ختامي صفر أو دائن ومسدد بالكامل
     dso = 0;
     arTurnover = 365;
     annualizedTurnover = 365;
