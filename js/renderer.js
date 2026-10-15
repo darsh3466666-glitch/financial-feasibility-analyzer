@@ -526,29 +526,6 @@ const Renderer = {
       const mapping = profile.suggestedMapping;
       const colProfiles = profile.columnProfiles;
 
-      // منع دبلرة الرصيد داخل نفس الشيت تلقائياً
-      if (mapping.openingBalance && mapping.closingBalance && mapping.openingBalance === mapping.closingBalance) {
-        const norm = normalizeText(sheet.fileName + ' ' + sheet.sheetName);
-        if (norm.includes('سابق') || norm.includes('قديم') || norm.includes('اول') || norm.includes('افتتاح')) {
-          mapping.closingBalance = null;
-        } else {
-          mapping.openingBalance = null;
-        }
-      }
-
-      // تحديد الدور الذكي للشيت لإظهاره كبادج إرشادي
-      let roleBadge = '';
-      const normContext = normalizeText(sheet.fileName + ' ' + sheet.sheetName);
-      if (normContext.includes('سابق') || normContext.includes('افتتاح') || normContext.includes('اول') || normContext.includes('قديم')) {
-        roleBadge = '<span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:11px; margin-right:8px; border:1px solid #bae6fd;">رصيد أول المدة (سابق)</span>';
-      } else if (normContext.includes('حالي') || normContext.includes('ختام') || normContext.includes('اخر') || normContext.includes('جديد')) {
-        roleBadge = '<span class="badge" style="background:#fef3c7; color:#92400e; font-size:11px; margin-right:8px; border:1px solid #fde68a;">رصيد آخر المدة (حالي)</span>';
-      } else if (normContext.includes('فاتور') || normContext.includes('مبيع')) {
-        roleBadge = '<span class="badge" style="background:#f0fdf4; color:#15803d; font-size:11px; margin-right:8px; border:1px solid #bbf7d0;">فواتير ومبيعات</span>';
-      } else if (normContext.includes('سداد') || normContext.includes('تحصيل') || normContext.includes('قبض')) {
-        roleBadge = '<span class="badge" style="background:#ecfdf5; color:#047857; font-size:11px; margin-right:8px; border:1px solid #a7f3d0;">سدادات ومقبوضات</span>';
-      }
-
       const selector = field => {
         const detected = mapping[field.key] || '';
         
@@ -577,39 +554,13 @@ const Renderer = {
 
       html += `
         <div class="file-mapping-card" style="margin-bottom:12px; padding:14px; border:1px solid var(--border-subtle); border-radius:var(--radius-md);">
-          <h4 style="margin:0 0 8px; font-size:var(--text-sm); color:var(--accent-primary); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
-            <span>${escapeHTML(sheet.fileName)} — ${escapeHTML(sheet.sheetName)}</span>
-            ${roleBadge}
-          </h4>
+          <h4 style="margin:0 0 8px; font-size:var(--text-sm); color:var(--accent-primary);">${escapeHTML(sheet.fileName)} — ${escapeHTML(sheet.sheetName)}</h4>
           <div class="mapping-grid">${fields.map(selector).join('')}</div>
         </div>
       `;
     });
 
     container.innerHTML = html;
-
-    // تفعيل المنع التلقائي لاختيار نفس عمود الرصيد لأول وآخر المدة معاً
-    container.querySelectorAll('.mapping-select').forEach(select => {
-      select.addEventListener('change', (e) => {
-        const target = e.target;
-        const sheetIdx = target.dataset.sheetIndex;
-        const fieldKey = target.dataset.field;
-        const val = target.value;
-        if (!val) return;
-
-        if (fieldKey === 'openingBalance') {
-          const closingSelect = document.getElementById(`mapping-${sheetIdx}-closingBalance`);
-          if (closingSelect && closingSelect.value === val) {
-            closingSelect.value = '';
-          }
-        } else if (fieldKey === 'closingBalance') {
-          const openingSelect = document.getElementById(`mapping-${sheetIdx}-openingBalance`);
-          if (openingSelect && openingSelect.value === val) {
-            openingSelect.value = '';
-          }
-        }
-      });
-    });
   },
 
   /* ═══════════════════════════════════════════

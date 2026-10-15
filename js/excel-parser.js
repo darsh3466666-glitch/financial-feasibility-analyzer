@@ -155,49 +155,6 @@ async function parseExcelFiles(files) {
     }
   }
 
-  // مواءمة ذكية متعددة الملفات: ربط رصيد الملف السابق بأول المدة والحالي بآخر المدة تلقائياً
-  if (allSheets.length > 1) {
-    const openingKeywords = ['اول', 'افتتاح', 'بداية', 'سابق', 'قديم', 'ماضي', 'قبل', 'opening', 'start', 'previous', 'prior', 'before', 'old', 'past'];
-    const closingKeywords = ['حالي', 'اخر', 'نهاية', 'ختام', 'جديد', 'closing', 'end', 'current', 'latest'];
-
-    const openingSheets = allSheets.filter(s => {
-      const norm = normalizeText(s.fileName + ' ' + s.sheetName);
-      return openingKeywords.some(kw => norm.includes(kw));
-    });
-    const closingSheets = allSheets.filter(s => {
-      const norm = normalizeText(s.fileName + ' ' + s.sheetName);
-      return closingKeywords.some(kw => norm.includes(kw));
-    });
-
-    if (openingSheets.length > 0) {
-      openingSheets.forEach(s => {
-        const m = s.profile?.suggestedMapping;
-        if (m) {
-          const bal = m.openingBalance || m.closingBalance || m.balance;
-          if (bal) {
-            m.openingBalance = bal;
-            m.closingBalance = null;
-            m.balance = null;
-          }
-        }
-      });
-    }
-
-    if (closingSheets.length > 0) {
-      closingSheets.forEach(s => {
-        const m = s.profile?.suggestedMapping;
-        if (m) {
-          const bal = m.closingBalance || m.openingBalance || m.balance;
-          if (bal) {
-            m.closingBalance = bal;
-            m.openingBalance = null;
-            m.balance = null;
-          }
-        }
-      });
-    }
-  }
-
   return {
     sheets: allSheets,
     totalRows: allSheets.reduce((sum, s) => sum + s.rowCount, 0)
@@ -288,36 +245,19 @@ function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
     }
   });
 
-  const openingKeywords = ['اول', 'افتتاح', 'بداية', 'سابق', 'قديم', 'ماضي', 'قبل', 'opening', 'start', 'previous', 'prior', 'before', 'old', 'past'];
-  const closingKeywords = ['حالي', 'اخر', 'نهاية', 'ختام', 'جديد', 'closing', 'end', 'current', 'latest'];
-
-  const isOpeningSheet = openingKeywords.some(kw => contextNameNormalized.includes(kw)) || getHeaderScore(contextNameNormalized, openingKeywords) >= 0.5;
-  const isClosingSheet = closingKeywords.some(kw => contextNameNormalized.includes(kw)) || getHeaderScore(contextNameNormalized, closingKeywords) >= 0.5;
+  const isOpeningSheet = getHeaderScore(contextNameNormalized, ['اول', 'افتتاحي', 'بداية', 'opening', 'start']) >= 0.6;
+  const isClosingSheet = getHeaderScore(contextNameNormalized, ['حالي', 'اخر', 'نهاية', 'ختامي', 'closing', 'end', 'current']) >= 0.6;
 
   // الذكاء الجديد: توجيه عمود "الرصيد" بناءً على اسم الملف أو الشيت (أول أو آخر المدة)
   if (genericBalance) {
-    if (isOpeningSheet && !isClosingSheet) {
-      suggestedMapping.openingBalance = genericBalance;
-      suggestedMapping.closingBalance = null;
-      suggestedMapping.balance = null;
-    } else if (isClosingSheet && !isOpeningSheet) {
-      suggestedMapping.closingBalance = genericBalance;
-      suggestedMapping.openingBalance = null;
-      suggestedMapping.balance = null;
-    } else {
-      // شيت رصيد عام عادي: افتراضياً هو رصيد ختامي للمتابعة، مع تفريغ رصيد أول المدة منعاً لدبلرة الأرصدة
-      suggestedMapping.closingBalance = genericBalance;
-      suggestedMapping.openingBalance = null;
-      suggestedMapping.balance = null;
-    }
-  }
-
-  // ضمان عدم تكرار نفس العمود في أول المدة وآخر المدة لنفس الشيت مطلقاً
-  if (suggestedMapping.openingBalance && suggestedMapping.closingBalance && suggestedMapping.openingBalance === suggestedMapping.closingBalance) {
     if (isOpeningSheet) {
-      suggestedMapping.closingBalance = null;
-    } else {
-      suggestedMapping.openingBalance = null;
+      suggestedMapping.openingBalance = genericBalance;
+      if (suggestedMapping.closingBalance === genericBalance) suggestedMapping.closingBalance = null;
+      if (suggestedMapping.balance === genericBalance) suggestedMapping.balance = null;
+    } else if (isClosingSheet) {
+      suggestedMapping.closingBalance = genericBalance;
+      if (suggestedMapping.openingBalance === genericBalance) suggestedMapping.openingBalance = null;
+      if (suggestedMapping.balance === genericBalance) suggestedMapping.balance = null;
     }
   }
 

@@ -41,22 +41,12 @@ function calculateAll(parsedData, settings) {
     ? autoPeriodDays 
     : (settings.defaultPeriodDays || 365);
 
-  // فحص هل يحتوي المشروع بالكامل على أي حركات سداد مسجلة
-  let hasAnyPayments = false;
-  for (const [, records] of parsedData.clients) {
-    if (records.some(r => (r.paymentAmount || 0) > 0)) {
-      hasAnyPayments = true;
-      break;
-    }
-  }
-
   const effectiveSettings = {
     ...settings,
     defaultPeriodDays: effectivePeriodDays,
     detectedPeriodDays: autoPeriodDays,
     globalStartDate,
-    globalEndDate,
-    hasAnyPayments
+    globalEndDate
   };
 
   for (const [clientName, records] of parsedData.clients) {
@@ -78,13 +68,8 @@ function calculateAll(parsedData, settings) {
 
     const result = calculateClientMetrics(clientName, records, effectiveSettings);
     
-    // استبعاد الحسابات الصفرية الخاملة بالكامل (مبيعات = 0، وأرصدة = 0، وبدون أي سدادات)
-    if (!result || (
-      result.totalSales <= 0 &&
-      (!result.closingBalance || Math.abs(result.closingBalance) === 0) &&
-      (!result.openingBalance || Math.abs(result.openingBalance) === 0) &&
-      (!result.totalPayments || Math.abs(result.totalPayments) === 0)
-    )) {
+    // استبعاد الحسابات الصفرية الخاملة (مبيعات = 0 وبدون أي رصيد مدين أو دائن)
+    if (!result || (result.totalSales <= 0 && (!result.closingBalance || Math.abs(result.closingBalance) === 0))) {
       continue;
     }
 
@@ -98,24 +83,8 @@ function calculateAll(parsedData, settings) {
  * حساب المؤشرات المالية لعميل واحد — الأقسام الثلاثة
  */
 function calculateClientMetrics(clientName, records, settings) {
-  // ترتيب السجلات: حسب التاريخ، وإن لم تكن هناك تواريخ فرسيد أول المدة يأتي أولاً وآخر المدة يأتي أخيراً
-  const sorted = [...records].sort((a, b) => {
-    if (a.date instanceof Date && b.date instanceof Date) {
-      return a.date - b.date;
-    }
-    if (a.date instanceof Date) return 1;
-    if (b.date instanceof Date) return -1;
-
-    // إذا لم تكن هناك تواريخ: سجل رصيد أول المدة يأتي أولاً
-    if (a.openingBalance !== null && b.openingBalance === null) return -1;
-    if (b.openingBalance !== null && a.openingBalance === null) return 1;
-
-    // سجل رصيد آخر المدة يأتي أخيراً
-    if (a.closingBalance !== null && b.closingBalance === null) return 1;
-    if (b.closingBalance !== null && a.closingBalance === null) return -1;
-
-    return 0;
-  });
+  // ترتيب السجلات حسب التاريخ
+  const sorted = [...records].sort((a, b) => a.date - b.date);
 
   // حساب الفترة
   // الصواب في التحليل المالي هو استخدام فترة التحليل الإجمالية (Period) الثابتة لجميع العملاء
@@ -140,55 +109,24 @@ function calculateClientMetrics(clientName, records, settings) {
 
   // رصيد أول المدة وآخر المدة
   const openingBalance = getOpeningBalance(sorted);
-  const explicitClosingBalance = getClosingBalance(sorted);
-
-  // إجمالي المحصلات (مجموع المدفوعات المسجلة)
-  let totalPayments = records.reduce((sum, r) => sum + (r.paymentAmount || 0), 0);
-
-  // تحديد رصيد آخر المدة النهائي
-  let closingBalance = explicitClosingBalance;
-  if (closingBalance === null) {
-    if (settings.hasAnyPayments) {
-      // طالما أن هناك شيت سدادات في المشروع، فالرصيد الختامي = أول المدة + مبيعات - سدادات
-      closingBalance = roundTo(Math.max(0, openingBalance) + totalSales - totalPayments, 2);
-    } else {
-      // لا توجد أي سدادات في المشروع كله (ملف مبيعات فقط)
-      const nameLower = clientName.toLowerCase().trim();
-      if (nameLower.includes('نقد') || nameLower.includes('كاش') || nameLower.includes('cash')) {
-        closingBalance = 0;
-      } else {
-        closingBalance = roundTo(Math.max(0, openingBalance) + totalSales, 2);
-      }
-    }
-  }
+  const closingBalance = getClosingBalance(sorted);
 
   // تحديد ما إذا كان العميل دائناً (له رصيد / دفعات مقدمة)
   // يعتمد حصرياً على رصيد الإغلاق الصافي — حركة دائنة تاريخية واحدة لا تجعل العميل "دائناً"
   const isCreditClient = (closingBalance < 0);
 
-  // التحقق هل توجد حركات سداد أو أرصدة جارية مسجلة على مستوى الصفوف
-  const hasRowBalances = sorted.some(r => r.balance !== null && r.balance !== undefined && !isNaN(r.balance));
-  const hasRowPayments = sorted.some(r => (r.paymentAmount || 0) > 0);
+  // إجمالي المحصلات (مجموع المدفوعات)
+  let totalPayments = records.reduce((sum, r) => sum + (r.paymentAmount || 0), 0);
 
-  // إذا كانت المدفوعات صفر ولم يكن هناك شيت سدادات ورصيد الإغلاق صفر أو أقل، فالعميل سدد مبيعاته فوراً كاش
-  let isExplicitCash = false;
-  if (totalPayments === 0 && !settings.hasAnyPayments) {
+  // إذا كانت المدفوعات صفر ورصيد الإغلاق صفر أو أقل، فالعميل سدد مبيعاته فوراً كاش
+  if (totalPayments === 0) {
     const inferred = Math.max(0, openingBalance) + totalSales - Math.max(0, closingBalance);
     if (inferred > 0) totalPayments = inferred;
-    if (closingBalance <= 0 && openingBalance <= 0) {
-      isExplicitCash = true;
-    }
   }
 
-  // إذا كان العميل مصفّي حسابه بالكامل (رصيد بداية ورصيد ختام صفر أو أقل) وبدون حركات سداد تفصيلية:
-  if (closingBalance <= 0 && openingBalance <= 0 && !hasRowBalances && !hasRowPayments) {
-    isExplicitCash = true;
-    if (totalPayments === 0) totalPayments = totalSales;
-  }
-
-  // متوسط المدينين وفق المعايير المالية الحديثة
-  // العميل الدائن أو عميل الكاش الفوري مديونيته للمنشأة = 0
-  const avgReceivables = (isCreditClient || isExplicitCash) ? 0 : calculateAverageReceivables(
+  // متوسط المدينين وفق المعايير المالية الحديثة (متوسط الرصيد اليومي المرجح بالزمن)
+  // العميل الدائن رصيد مديونيته للمنشأة = 0
+  const avgReceivables = isCreditClient ? 0 : calculateAverageReceivables(
     sorted,
     Math.max(0, openingBalance),
     Math.max(0, closingBalance),
@@ -203,12 +141,7 @@ function calculateClientMetrics(clientName, records, settings) {
   let dso = 0;
   let annualizedTurnover = 365;
 
-  if (isExplicitCash || isCreditClient) {
-    // بيع نقدي فوري بالكامل أو عميل دائن مسدد بالكامل
-    dso = 0;
-    arTurnover = 365;
-    annualizedTurnover = 365;
-  } else if (totalSales > 0 && avgReceivables > 0) {
+  if (!isCreditClient && totalSales > 0 && avgReceivables > 0) {
     arTurnover = totalSales / avgReceivables;
     dso = periodDays / arTurnover;
 
@@ -222,13 +155,14 @@ function calculateClientMetrics(clientName, records, settings) {
       dso = roundTo(dso, 1);
       annualizedTurnover = roundTo(365 / dso, 1);
     }
-  } else if (totalSales === 0 && closingBalance > 0) {
-    // عميل عليه مديونية متبقية بدون مشتريات جديدة — الدين ظل معلقاً طوال الفترة
+  } else if (!isCreditClient && totalSales === 0 && (closingBalance > 0 || openingBalance > 0)) {
+    // عميل خامل عليه مديونية قديمة بدون مشتريات جديدة — ليس كاشاً
+    // DSO يساوي كامل فترة التحليل لأن الدين ظل معلقاً طوال الفترة
     dso = roundTo(periodDays, 1);
     arTurnover = 0;
     annualizedTurnover = 0;
   } else {
-    // رصيد ختامي صفر أو دائن ومسدد بالكامل
+    // بيع نقدي فوري بالكامل أو عميل دائن
     dso = 0;
     arTurnover = 365;
     annualizedTurnover = 365;
@@ -265,13 +199,12 @@ function calculateClientMetrics(clientName, records, settings) {
 
   // 1. حساب "الخسارة الخفية" (تكلفة الأموال المعطلة كنسبة من المبيعات)
   // النسبة = (أيام التحصيل / 365) × سعر الفائدة البنكي (تكلفة الفرصة البديلة)
-  const isSettledOrCash = isCreditClient || closingBalance <= 0 || avgReceivables === 0 || dso === 0 || dso < 1;
-  const hiddenLossPct = isSettledOrCash ? 0 : ((dso / 365) * depositRate);
+  const hiddenLossPct = isCreditClient ? 0 : ((dso / 365) * depositRate);
 
   // الخسارة الخفية كمبلغ (قيمة الفرصة البديلة الضائعة عن فترة التحليل بالكامل)
-  const opportunityCost = isSettledOrCash ? 0 : (avgReceivables * (depositRate / 100) * (periodDays / 365));
+  const opportunityCost = isCreditClient ? 0 : (avgReceivables * (depositRate / 100) * (periodDays / 365));
   // تكلفة التمويل الفعلية (في حال الاقتراض عن فترة التحليل بالكامل)
-  const financingCost = isSettledOrCash ? 0 : (avgReceivables * (lendingRate / 100) * (periodDays / 365));
+  const financingCost = isCreditClient ? 0 : (avgReceivables * (lendingRate / 100) * (periodDays / 365));
 
   // حسابات الجدوى القديمة للتوافق مع الرسوم البيانية والتصدير
   const grossMargin = profitMargin;
@@ -290,12 +223,12 @@ function calculateClientMetrics(clientName, records, settings) {
   // العميل المثالي يدور ماله 12 مرة سنوياً (شهرياً)
   const scoreTurnover = Math.min(25, (annualizedTurnover / 12) * 25);
   
-  const qualityScore = (isCreditClient || isSettledOrCash) ? 100 : (scoreCollection + scoreDSO + scoreTurnover);
+  const qualityScore = isCreditClient ? 100 : (scoreCollection + scoreDSO + scoreTurnover);
   
   // تقييم الجدوى المالية والاقتصادية الشاملة (مُجدي / غير مُجدي):
-  // 1. عميل الكاش الفوري والعميل الدائن والعميل المسدد بالكامل رصيده 0 أو دائن دائماً مُجدي 100%
+  // 1. عميل الكاش الفوري والعميل الدائن دائماً مُجدي 100% لعدم وجود مخاطر أو تكلفة انتظار
   // 2. العميل الآجل يعتبر مُجدياً إذا كانت تكلفة انتظاره مغطاة بهامش الربح، ومتوسط ديونه الراكدة (>90 يوم) لا تتجاوز 40%، ونسبة تحصيله لا تقل عن 30%
-  const isInstantCash = isCreditClient || isSettledOrCash || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365 || (closingBalance <= 0 && collectionRate >= 90));
+  const isInstantCash = isCreditClient || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365);
   let isFeasible = false;
   if (isInstantCash) {
     isFeasible = true;
@@ -475,7 +408,7 @@ function getClosingBalance(sortedRecords) {
       return roundTo(record.balance, 2);
     }
   }
-  return null;
+  return 0;
 }
 
 /**
@@ -484,18 +417,6 @@ function getClosingBalance(sortedRecords) {
  * لتفادي تشوه النسب عند تصفية الحسابات في نهاية الفترة أو وجود مبالغ فكة متبقية.
  */
 function calculateAverageReceivables(sortedRecords, openingBalance, closingBalance, totalSales, periodDays, startDate, endDate) {
-  // هل يحتوي الشيت على حركات سداد مسجلة أو أرصدة جارية على مستوى الصفوف؟
-  const hasRowBalances = sortedRecords.some(r => r.balance !== null && r.balance !== undefined && !isNaN(r.balance));
-  const hasRowPayments = sortedRecords.some(r => (r.paymentAmount || 0) > 0);
-
-  // إذا لم يكن هناك عمود رصيد ولا حركات سداد مسجلة في السجلات:
-  if (!hasRowBalances && !hasRowPayments) {
-    // إذا كان رصيد أول ورصيد آخر المدة صفراً أو أقل: العميل نقدي ومسدد بالكامل
-    if (openingBalance <= 0 && closingBalance <= 0) {
-      return 0;
-    }
-  }
-
   // تصفية السجلات ذات التواريخ الصالحة
   const validDated = sortedRecords.filter(r => r.date instanceof Date && !isNaN(r.date.getTime()));
 
