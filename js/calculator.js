@@ -41,12 +41,22 @@ function calculateAll(parsedData, settings) {
     ? autoPeriodDays 
     : (settings.defaultPeriodDays || 365);
 
+  // فحص هل يحتوي المشروع بالكامل على أي حركات سداد مسجلة
+  let hasAnyPayments = false;
+  for (const [, records] of parsedData.clients) {
+    if (records.some(r => (r.paymentAmount || 0) > 0)) {
+      hasAnyPayments = true;
+      break;
+    }
+  }
+
   const effectiveSettings = {
     ...settings,
     defaultPeriodDays: effectivePeriodDays,
     detectedPeriodDays: autoPeriodDays,
     globalStartDate,
-    globalEndDate
+    globalEndDate,
+    hasAnyPayments
   };
 
   for (const [clientName, records] of parsedData.clients) {
@@ -109,7 +119,27 @@ function calculateClientMetrics(clientName, records, settings) {
 
   // رصيد أول المدة وآخر المدة
   const openingBalance = getOpeningBalance(sorted);
-  const closingBalance = getClosingBalance(sorted);
+  const explicitClosingBalance = getClosingBalance(sorted);
+
+  // إجمالي المحصلات (مجموع المدفوعات المسجلة)
+  let totalPayments = records.reduce((sum, r) => sum + (r.paymentAmount || 0), 0);
+
+  // تحديد رصيد آخر المدة النهائي
+  let closingBalance = explicitClosingBalance;
+  if (closingBalance === null) {
+    if (settings.hasAnyPayments) {
+      // طالما أن هناك شيت سدادات في المشروع، فالرصيد الختامي = أول المدة + مبيعات - سدادات
+      closingBalance = roundTo(Math.max(0, openingBalance) + totalSales - totalPayments, 2);
+    } else {
+      // لا توجد أي سدادات في المشروع كله (ملف مبيعات فقط)
+      const nameLower = clientName.toLowerCase().trim();
+      if (nameLower.includes('نقد') || nameLower.includes('كاش') || nameLower.includes('cash')) {
+        closingBalance = 0;
+      } else {
+        closingBalance = roundTo(Math.max(0, openingBalance) + totalSales, 2);
+      }
+    }
+  }
 
   // تحديد ما إذا كان العميل دائناً (له رصيد / دفعات مقدمة)
   // يعتمد حصرياً على رصيد الإغلاق الصافي — حركة دائنة تاريخية واحدة لا تجعل العميل "دائناً"
@@ -119,12 +149,9 @@ function calculateClientMetrics(clientName, records, settings) {
   const hasRowBalances = sorted.some(r => r.balance !== null && r.balance !== undefined && !isNaN(r.balance));
   const hasRowPayments = sorted.some(r => (r.paymentAmount || 0) > 0);
 
-  // إجمالي المحصلات (مجموع المدفوعات المسجلة)
-  let totalPayments = records.reduce((sum, r) => sum + (r.paymentAmount || 0), 0);
-
-  // إذا كانت المدفوعات صفر ورصيد الإغلاق صفر أو أقل، فالعميل سدد مبيعاته فوراً كاش
+  // إذا كانت المدفوعات صفر ولم يكن هناك شيت سدادات ورصيد الإغلاق صفر أو أقل، فالعميل سدد مبيعاته فوراً كاش
   let isExplicitCash = false;
-  if (totalPayments === 0) {
+  if (totalPayments === 0 && !settings.hasAnyPayments) {
     const inferred = Math.max(0, openingBalance) + totalSales - Math.max(0, closingBalance);
     if (inferred > 0) totalPayments = inferred;
     if (closingBalance <= 0 && openingBalance <= 0) {
@@ -135,6 +162,7 @@ function calculateClientMetrics(clientName, records, settings) {
   // إذا كان العميل مصفّي حسابه بالكامل (رصيد بداية ورصيد ختام صفر أو أقل) وبدون حركات سداد تفصيلية:
   if (closingBalance <= 0 && openingBalance <= 0 && !hasRowBalances && !hasRowPayments) {
     isExplicitCash = true;
+    if (totalPayments === 0) totalPayments = totalSales;
   }
 
   // متوسط المدينين وفق المعايير المالية الحديثة
@@ -427,7 +455,7 @@ function getClosingBalance(sortedRecords) {
       return roundTo(record.balance, 2);
     }
   }
-  return 0;
+  return null;
 }
 
 /**
@@ -441,14 +469,11 @@ function calculateAverageReceivables(sortedRecords, openingBalance, closingBalan
   const hasRowPayments = sortedRecords.some(r => (r.paymentAmount || 0) > 0);
 
   // إذا لم يكن هناك عمود رصيد ولا حركات سداد مسجلة في السجلات:
-  // فلا يمكن احتساب التكامل اليومي بتراكم الفواتير فقط دون خصم السدادات!
   if (!hasRowBalances && !hasRowPayments) {
     // إذا كان رصيد أول ورصيد آخر المدة صفراً أو أقل: العميل نقدي ومسدد بالكامل
     if (openingBalance <= 0 && closingBalance <= 0) {
       return 0;
     }
-    // إذا وجد رصيد متبقي معلن، نأخذ المتوسط الحسابي لأول وآخر المدة
-    return roundTo((Math.max(0, openingBalance) + Math.max(0, closingBalance)) / 2, 2);
   }
 
   // تصفية السجلات ذات التواريخ الصالحة
