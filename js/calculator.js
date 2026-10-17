@@ -68,8 +68,13 @@ function calculateAll(parsedData, settings) {
 
     const result = calculateClientMetrics(clientName, records, effectiveSettings);
     
-    // استبعاد الحسابات الصفرية الخاملة (مبيعات = 0 وبدون أي رصيد مدين أو دائن)
-    if (!result || (result.totalSales <= 0 && (!result.closingBalance || Math.abs(result.closingBalance) === 0))) {
+    // استبعاد فقط الحسابات الصفرية الخاملة بالكامل (مبيعات = 0، وأرصدة = 0، وبدون أي سدادات)
+    if (!result || (
+      result.totalSales <= 0 &&
+      (!result.closingBalance || Math.abs(result.closingBalance) === 0) &&
+      (!result.openingBalance || Math.abs(result.openingBalance) === 0) &&
+      (!result.totalPayments || Math.abs(result.totalPayments) === 0)
+    )) {
       continue;
     }
 
@@ -81,162 +86,97 @@ function calculateAll(parsedData, settings) {
 
 /**
  * حساب المؤشرات المالية لعميل واحد — الأقسام الثلاثة
+ * يعتمد كلياً على محرك التسوية الزمنية FIFO بين الفواتير والسدادات
  */
 function calculateClientMetrics(clientName, records, settings) {
-  // ترتيب السجلات حسب التاريخ
-  const sorted = [...records].sort((a, b) => a.date - b.date);
-
-  // حساب الفترة
-  // الصواب في التحليل المالي هو استخدام فترة التحليل الإجمالية (Period) الثابتة لجميع العملاء
-  // لكي تكون مقارنة أيام التحصيل (DSO) ومعدل الدوران صحيحة وموحدة.
   const periodDays = settings.defaultPeriodDays || 365;
-  
   let startDate = settings.globalStartDate || null;
   let endDate = settings.globalEndDate || null;
-  
-  const validRecordsWithDate = sorted.filter(r => r.date instanceof Date && !isNaN(r.date));
+
+  const validRecordsWithDate = records.filter(r => r.date instanceof Date && !isNaN(r.date));
   if (validRecordsWithDate.length >= 2) {
     if (!startDate) startDate = validRecordsWithDate[0].date;
     if (!endDate) endDate = validRecordsWithDate[validRecordsWithDate.length - 1].date;
   }
 
+  // رصيد أول المدة
+  const openingBalance = getOpeningBalance(records);
+
   // ═══════════════════════════════════════════════
-  // القسم الأول: دوران المديونية وDSO وCollection Rate
+  // تشغيل المحرك الزمني لتسوية الفواتير والمقبوضات
   // ═══════════════════════════════════════════════
+  const timeline = reconcileClientTimeline(records, openingBalance, settings);
 
-  // إجمالي المبيعات الآجلة (مجموع الفواتير)
-  const totalSales = records.reduce((sum, r) => sum + (r.invoiceAmount || 0), 0);
+  const totalSales = timeline.totalSales;
+  const totalPayments = timeline.totalPayments;
+  const closingBalance = timeline.closingBalance;
+  const isCreditClient = timeline.isCreditClient;
+  const dso = timeline.dso;
+  const actualCollectionDays = timeline.actualCollectionDays;
+  const collectionRate = timeline.collectionRate;
+  const agingBuckets = timeline.agingBuckets;
 
-  // رصيد أول المدة وآخر المدة
-  const openingBalance = getOpeningBalance(sorted);
-  const closingBalance = getClosingBalance(sorted);
-
-  // تحديد ما إذا كان العميل دائناً (له رصيد / دفعات مقدمة)
-  // يعتمد حصرياً على رصيد الإغلاق الصافي — حركة دائنة تاريخية واحدة لا تجعل العميل "دائناً"
-  const isCreditClient = (closingBalance < 0);
-
-  // إجمالي المحصلات (مجموع المدفوعات)
-  let totalPayments = records.reduce((sum, r) => sum + (r.paymentAmount || 0), 0);
-
-  // إذا كانت المدفوعات صفر ورصيد الإغلاق صفر أو أقل، فالعميل سدد مبيعاته فوراً كاش
-  if (totalPayments === 0) {
-    const inferred = Math.max(0, openingBalance) + totalSales - Math.max(0, closingBalance);
-    if (inferred > 0) totalPayments = inferred;
-  }
-
-  // متوسط المدينين وفق المعايير المالية الحديثة (متوسط الرصيد اليومي المرجح بالزمن)
-  // العميل الدائن رصيد مديونيته للمنشأة = 0
-  const avgReceivables = isCreditClient ? 0 : calculateAverageReceivables(
-    sorted,
+  // متوسط المدينين اليومي المرجح بالزمن (Time-Weighted Daily Average Balance)
+  const avgReceivables = isCreditClient ? 0 : calculateDailyAverageReceivables(
+    timeline.chronologicalEvents,
     Math.max(0, openingBalance),
-    Math.max(0, closingBalance),
-    totalSales,
-    periodDays,
-    settings.globalStartDate,
-    settings.globalEndDate
+    startDate || timeline.clientFirstDate,
+    endDate || timeline.clientLastDate,
+    periodDays
   );
 
-  // حساب أيام التحصيل (DSO) ومعدل الدوران وفق المعايير المالية المعتمدة:
+  // معدل دوران المدينين
   let arTurnover = 365;
-  let dso = 0;
   let annualizedTurnover = 365;
 
-  if (!isCreditClient && totalSales > 0 && avgReceivables > 0) {
-    arTurnover = totalSales / avgReceivables;
-    dso = periodDays / arTurnover;
-
-    // المعايير المالية: إذا كانت فترة التحصيل أقل من يوم واحد (dso < 1)،
-    // فهذا سداد نقدي فوري بالكامل (DSO = 0، والدوران نقدي فوري):
-    if (dso < 1) {
-      dso = 0;
-      arTurnover = 365;
-      annualizedTurnover = 365;
-    } else {
-      dso = roundTo(dso, 1);
-      annualizedTurnover = roundTo(365 / dso, 1);
-    }
-  } else if (!isCreditClient && totalSales === 0 && (closingBalance > 0 || openingBalance > 0)) {
-    // عميل خامل عليه مديونية قديمة بدون مشتريات جديدة — ليس كاشاً
-    // DSO يساوي كامل فترة التحليل لأن الدين ظل معلقاً طوال الفترة
-    dso = roundTo(periodDays, 1);
-    arTurnover = 0;
-    annualizedTurnover = 0;
+  if (isCreditClient || (closingBalance <= 0 && dso === 0)) {
+    arTurnover = 365;
+    annualizedTurnover = 365;
+  } else if (dso > 0) {
+    arTurnover = roundTo(periodDays / dso, 2);
+    annualizedTurnover = roundTo(365 / dso, 1);
+  } else if (totalSales > 0 && avgReceivables > 0) {
+    arTurnover = roundTo(totalSales / avgReceivables, 2);
+    annualizedTurnover = roundTo(arTurnover * (365 / periodDays), 1);
   } else {
-    // بيع نقدي فوري بالكامل أو عميل دائن
-    dso = 0;
     arTurnover = 365;
     annualizedTurnover = 365;
   }
 
-  // معدل التحصيل (Collection Rate)
-  // Collection_Rate % = (إجمالي المحصّل / إجمالي المستحق) × 100
-  // إجمالي المستحق = رصيد أول المدة + المبيعات الآجلة
-  const totalDue = Math.max(0, openingBalance) + totalSales;
-  let collectionRate = isCreditClient ? 100 : 0;
-  if (totalDue > 0) {
-    collectionRate = Math.min(100, Math.round(((totalPayments / totalDue) * 100) * 10) / 10);
-    if (isCreditClient) collectionRate = 100;
-  }
-
-  // تحليل أعمار الديون (Aging Buckets) - العميل الدائن ليس عليه ديون معمرة
-  const agingReferenceDate = settings.globalEndDate || new Date();
-  const agingBuckets = isCreditClient 
-    ? { current: 0, days30: 0, days60: 0, days90: 0, over90: 0, total: 0 }
-    : calculateAgingBuckets(sorted, agingReferenceDate, Math.max(0, closingBalance));
-
   // ═══════════════════════════════════════════════
   // القسم الثاني: الجدوى وتكلفة الفرصة البديلة
   // ═══════════════════════════════════════════════
+  const depositRate = settings.depositRate || settings.interestRate || 19;
+  const lendingRate = settings.lendingRate || settings.interestRate || 24;
+  const profitMargin = settings.profitMargin || 0;
 
-  // استخراج الإعدادات الموسعة
-  const depositRate = settings.depositRate || settings.interestRate || 19; // الافتراضي 19%
-  const lendingRate = settings.lendingRate || settings.interestRate || 24; // الافتراضي 24%
-  const profitMargin = settings.profitMargin || 0; // للحفاظ على التوافق مع بيانات التسعير القديمة
-
-  // Hurdle Rate = سعر الإيداع + علاوة مخاطر الإدارة
   const riskPremiumMgmt = settings.riskPremiumPct || 0;
   const hurdleRate = depositRate + riskPremiumMgmt;
 
-  // 1. حساب "الخسارة الخفية" (تكلفة الأموال المعطلة كنسبة من المبيعات)
-  // النسبة = (أيام التحصيل / 365) × سعر الفائدة البنكي (تكلفة الفرصة البديلة)
-  const hiddenLossPct = isCreditClient ? 0 : ((dso / 365) * depositRate);
+  // الخسارة الخفية وتكلفة التمويل
+  const isSettledOrCash = isCreditClient || closingBalance <= 0 || avgReceivables === 0 || dso === 0 || dso < 1;
+  const hiddenLossPct = isSettledOrCash ? 0 : ((dso / 365) * depositRate);
+  const opportunityCost = isSettledOrCash ? 0 : (avgReceivables * (depositRate / 100) * (periodDays / 365));
+  const financingCost = isSettledOrCash ? 0 : (avgReceivables * (lendingRate / 100) * (periodDays / 365));
 
-  // الخسارة الخفية كمبلغ (قيمة الفرصة البديلة الضائعة عن فترة التحليل بالكامل)
-  const opportunityCost = isCreditClient ? 0 : (avgReceivables * (depositRate / 100) * (periodDays / 365));
-  // تكلفة التمويل الفعلية (في حال الاقتراض عن فترة التحليل بالكامل)
-  const financingCost = isCreditClient ? 0 : (avgReceivables * (lendingRate / 100) * (periodDays / 365));
-
-  // حسابات الجدوى القديمة للتوافق مع الرسوم البيانية والتصدير
   const grossMargin = profitMargin;
   const returnOnAR = grossMargin * annualizedTurnover;
   const feasibilityIndex = returnOnAR - hurdleRate;
 
-  // 2. حساب "نقاط الجودة الشاملة" (من 100 نقطة)
-  // أ. نقاط معدل التحصيل (الحد الأقصى 35 نقطة)
+  // نقاط الجودة الشاملة (من 100 نقطة)
   const scoreCollection = (Math.min(100, collectionRate) / 100) * 35;
-  
-  // ب. نقاط سرعة السداد DSO (الحد الأقصى 40 نقطة)
-  // العميل يحصل على صفر إذا تجاوز 120 يوم (4 شهور)
   const scoreDSO = Math.max(0, 40 - (dso / 120) * 40);
-  
-  // ج. نقاط معدل دوران المديونية (الحد الأقصى 25 نقطة)
-  // العميل المثالي يدور ماله 12 مرة سنوياً (شهرياً)
   const scoreTurnover = Math.min(25, (annualizedTurnover / 12) * 25);
-  
-  const qualityScore = isCreditClient ? 100 : (scoreCollection + scoreDSO + scoreTurnover);
-  
-  // تقييم الجدوى المالية والاقتصادية الشاملة (مُجدي / غير مُجدي):
-  // 1. عميل الكاش الفوري والعميل الدائن دائماً مُجدي 100% لعدم وجود مخاطر أو تكلفة انتظار
-  // 2. العميل الآجل يعتبر مُجدياً إذا كانت تكلفة انتظاره مغطاة بهامش الربح، ومتوسط ديونه الراكدة (>90 يوم) لا تتجاوز 40%، ونسبة تحصيله لا تقل عن 30%
-  const isInstantCash = isCreditClient || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365);
+  const qualityScore = (isCreditClient || isSettledOrCash) ? 100 : (scoreCollection + scoreDSO + scoreTurnover);
+
+  // تقييم الجدوى الاقتصادية
+  const isInstantCash = isCreditClient || isSettledOrCash || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365);
   let isFeasible = false;
   if (isInstantCash) {
     isFeasible = true;
   } else {
     const totalRemainingDebt = closingBalance > 0 ? closingBalance : (agingBuckets?.total || 0);
     const over90Ratio = totalRemainingDebt > 0 ? ((agingBuckets?.over90 || 0) / totalRemainingDebt) : 0;
-    
-    // نسبة تكلفة التمويل/الفرصة البديلة لفترة الائتمان
     const carryingCostPct = (dso / 365) * depositRate;
     const isProfitable = (grossMargin > carryingCostPct) || (dso <= 60);
     const hasHealthyAging = over90Ratio <= 0.40;
@@ -246,21 +186,19 @@ function calculateClientMetrics(clientName, records, settings) {
   }
 
   // ═══════════════════════════════════════════════
-  // القسم الثالث: بيانات التسعير (الحساب الفعلي في pricing-engine.js)
+  // القسم الثالث: بيانات التسعير
   // ═══════════════════════════════════════════════
-
-  // نسبة الزيادة المطلوبة (تكلفة التمويل كنسبة مئوية)
   const financingCostPct = isCreditClient ? 0 : ((lendingRate / 365) * dso);
-
-  // فجوة الجدوى القديمة (للتوافق مع الواجهة الحالية)
   const requiredMarkup = (isCreditClient || annualizedTurnover <= 0) ? 0 : (lendingRate / annualizedTurnover);
   const feasibilityGap = profitMargin - requiredMarkup;
 
   return {
     clientName,
 
-    // القسم الأول — دوران المديونية
+    // القسم الأول — دوران المديونية ومؤشرات النمط الزمني
     totalSales: roundTo(totalSales, 2),
+    totalGrossSales: roundTo(timeline.totalGrossSales, 2),
+    totalReturns: roundTo(timeline.totalReturns, 2),
     totalPayments: roundTo(totalPayments, 2),
     openingBalance: roundTo(openingBalance, 2),
     closingBalance: roundTo(closingBalance, 2),
@@ -268,11 +206,22 @@ function calculateClientMetrics(clientName, records, settings) {
     arTurnover: roundTo(arTurnover, 2),
     annualizedTurnover: roundTo(annualizedTurnover, 2),
     dso: roundTo(dso, 1),
+    actualCollectionDays: roundTo(actualCollectionDays, 1),
     collectionRate: roundTo(collectionRate, 1),
+    periodSalesCollectionRate: roundTo(timeline.periodSalesCollectionRate, 1),
     agingBuckets,
     isCredit: isCreditClient,
     creditAmount: isCreditClient ? Math.abs(closingBalance) : 0,
     statusLabel: isCreditClient ? 'دائن (له رصيد)' : 'مدين (عليه مديونية)',
+
+    // الحقول الرقابية ومؤشرات كفاية البيانات
+    matchedPaidAmount: timeline.matchedPaidAmount,
+    unappliedPayments: timeline.unappliedPayments,
+    overdueAmount: timeline.overdueAmount,
+    oldestOpenInvoiceDays: timeline.oldestOpenInvoiceDays,
+    clientTenureDays: timeline.clientTenureDays,
+    dataCoverage: timeline.dataCoverage,
+    creditExposure: timeline.creditExposure,
 
     // القسم الثاني — الجدوى وجودة العميل
     hurdleRate: roundTo(hurdleRate, 2),
@@ -300,84 +249,362 @@ function calculateClientMetrics(clientName, records, settings) {
 }
 
 /**
- * حساب أعمار الديون (Aging Buckets)
- * تصنيف الفواتير غير المسددة حسب عمرها
+ * المحرك الزمني لتسوية الفواتير والمقبوضات (Chronological FIFO Matching & Ledger)
+ * يعتمد المعايير المحاسبية الدقيقة لقطاع التجارة وتجارة الأعلاف:
+ * 1. تخصيص كل دفعة لأقدم دين مفتوح (FIFO) مع دعم السداد الجزئي
+ * 2. احتساب أيام التحصيل الفعلية المرجحة للمبالغ المسددة المرتبطة بالفواتير
+ * 3. تصنيف أعمار الديون الحقيقية للفواتير المتبقية من تاريخ صدور الفاتورة الأصلية
+ * 4. ترحيل رصيد أول المدة غير المسدد إلى شريحة الديون القديمة (>90 يوم)
+ * 5. فصل المرتجعات والإشعارات الدائنة عن التحصيل النقدي
+ * 6. قياس مدة تعامل العميل الفعلية (clientTenureDays) دون معاقبة العميل الجديد
  */
-function calculateAgingBuckets(sortedRecords, today, remainingDebt) {
-  const buckets = {
-    current: 0,       // 0-30 يوم
-    days30: 0,        // محفوظ للتوافق مع الإصدارات السابقة
-    days60: 0,        // 31-60 يوم
-    days90: 0,        // 61-90 يوم
-    over90: 0,        // > 90 يوم
-    total: 0
-  };
+function reconcileClientTimeline(records, openingBalance, periodSettings) {
+  const globalStart = periodSettings.globalStartDate || null;
+  const globalEnd = periodSettings.globalEndDate || new Date();
+  const periodDays = periodSettings.defaultPeriodDays || 365;
 
-  if (!remainingDebt || remainingDebt <= 0) {
-    return buckets; // No debt to age
-  }
+  let totalSales = 0;
+  let totalReturns = 0;
+  let totalPayments = 0;
+  const chronologicalEvents = [];
 
-  // Extract all invoices (with dates)
-  const invoices = sortedRecords
-    .filter(r => r.invoiceAmount > 0)
-    .map(r => ({
-      amount: r.invoiceAmount,
-      date: (r.date && !isNaN(r.date)) ? r.date : today // Fallback to today if no date
-    }))
-    .sort((a, b) => b.date - a.date); // Sort newest to oldest
+  for (const r of records) {
+    const rawInv = Number(r.invoiceAmount) || 0;
+    const rawPay = Number(r.paymentAmount) || 0;
+    const date = (r.date instanceof Date && !isNaN(r.date.getTime())) ? r.date : null;
 
-  // Allocate remaining debt to invoices (FIFO: newest invoices are unpaid first)
-  for (const inv of invoices) {
-    if (remainingDebt <= 0) break;
-    
-    const amountToAllocate = Math.min(inv.amount, remainingDebt);
-    remainingDebt -= amountToAllocate;
-    
-    const daysSince = Math.floor((today - inv.date) / (1000 * 60 * 60 * 24));
+    // تمييز المرتجعات والإشعارات الدائنة عن المبيعات العادية
+    if (rawInv < 0) {
+      totalReturns += Math.abs(rawInv);
+      chronologicalEvents.push({
+        type: 'return',
+        amount: Math.abs(rawInv),
+        date: date,
+        source: r
+      });
+    } else if (rawInv > 0) {
+      totalSales += rawInv;
+      chronologicalEvents.push({
+        type: 'invoice',
+        amount: rawInv,
+        date: date,
+        source: r
+      });
+    }
 
-    if (daysSince <= 30) {
-      buckets.current += amountToAllocate;
-    } else if (daysSince <= 60) {
-      buckets.days60 += amountToAllocate;
-    } else if (daysSince <= 90) {
-      buckets.days90 += amountToAllocate;
-    } else {
-      buckets.over90 += amountToAllocate;
+    if (rawPay > 0) {
+      totalPayments += rawPay;
+      chronologicalEvents.push({
+        type: 'payment',
+        amount: rawPay,
+        date: date,
+        source: r
+      });
     }
   }
 
-  // If there is STILL remaining debt (e.g. from opening balance without invoices)
-  if (remainingDebt > 0) {
-    // Put it in the oldest bucket because it predates our invoice records
-    buckets.over90 += remainingDebt;
+  // فرز الحركات زمنياً بالكامل
+  chronologicalEvents.sort((a, b) => {
+    const timeA = a.date ? a.date.getTime() : 0;
+    const timeB = b.date ? b.date.getTime() : 0;
+    if (timeA !== timeB) return timeA - timeB;
+    // في نفس اليوم: الفواتير أولاً ثم السدادات ثم المرتجعات
+    if (a.type === 'invoice' && b.type !== 'invoice') return -1;
+    if (a.type !== 'invoice' && b.type === 'invoice') return 1;
+    return 0;
+  });
+
+  // تحديد أول وآخر تاريخ حركة للعميل
+  const validDates = chronologicalEvents
+    .filter(e => e.date instanceof Date)
+    .map(e => e.date.getTime())
+    .sort((a, b) => a - b);
+
+  let clientFirstDate = validDates.length > 0 ? new Date(validDates[0]) : globalStart;
+  let clientLastDate = validDates.length > 0 ? new Date(validDates[validDates.length - 1]) : globalEnd;
+
+  // إذا وُجد رصيد أول مدة، فتاريخ بداية علاقة العميل بالفترة هو بداية الفترة العامة
+  if (openingBalance > 0 && globalStart) {
+    clientFirstDate = globalStart;
   }
 
-  buckets.total = buckets.current + buckets.days30 + buckets.days60 + buckets.days90 + buckets.over90;
+  // مدة تعامل العميل الفعلية (clientTenureDays)
+  let clientTenureDays = periodDays;
+  if (clientFirstDate && globalEnd) {
+    const tenureDiff = Math.ceil((globalEnd - clientFirstDate) / (1000 * 60 * 60 * 24));
+    if (tenureDiff > 0) {
+      clientTenureDays = Math.min(periodDays, tenureDiff);
+    }
+  }
+  clientTenureDays = Math.max(1, clientTenureDays);
 
-  // تحويل لنسب مئوية
-  if (buckets.total > 0) {
-    buckets.currentPct = roundTo((buckets.current / buckets.total) * 100, 1);
-    buckets.days30Pct = roundTo((buckets.days30 / buckets.total) * 100, 1);
-    buckets.days60Pct = roundTo((buckets.days60 / buckets.total) * 100, 1);
-    buckets.days90Pct = roundTo((buckets.days90 / buckets.total) * 100, 1);
-    buckets.over90Pct = roundTo((buckets.over90 / buckets.total) * 100, 1);
+  // طابور الالتزامات (FIFO Obligations Queue)
+  const obligations = [];
+
+  // 1. رصيد أول المدة: التزام مرحل مستقل بتاريخ البداية
+  if (openingBalance > 0) {
+    obligations.push({
+      id: 'opening_balance',
+      type: 'opening',
+      date: globalStart || clientFirstDate,
+      originalAmount: openingBalance,
+      remainingAmount: openingBalance,
+      isOpening: true
+    });
+  }
+
+  // 2. فواتير البيع تباعاً في طابور الالتزامات
+  let invCounter = 1;
+  for (const event of chronologicalEvents) {
+    if (event.type === 'invoice') {
+      obligations.push({
+        id: `inv_${invCounter++}`,
+        type: 'invoice',
+        date: event.date || clientFirstDate,
+        originalAmount: event.amount,
+        remainingAmount: event.amount,
+        isOpening: false
+      });
+    }
+  }
+
+  // تسوية السدادات والمرتجعات بنظام FIFO
+  const settlements = [];
+  let totalMatchedPaid = 0;
+  let unappliedPayments = 0;
+
+  for (const event of chronologicalEvents) {
+    if (event.type === 'return') {
+      // المرتجع يخفض الالتزامات المفتوحة مباشرة دون اعتباره تحصيلاً نقدياً
+      let returnRem = event.amount;
+      for (let i = obligations.length - 1; i >= 0 && returnRem > 0; i--) {
+        const ob = obligations[i];
+        if (ob.remainingAmount > 0) {
+          const deduction = Math.min(ob.remainingAmount, returnRem);
+          ob.remainingAmount -= deduction;
+          returnRem -= deduction;
+        }
+      }
+    } else if (event.type === 'payment') {
+      let payRem = event.amount;
+      const payDate = event.date || clientLastDate || globalEnd || new Date();
+
+      for (const ob of obligations) {
+        if (payRem <= 0) break;
+        if (ob.remainingAmount <= 0) continue;
+
+        const settleAmount = Math.min(ob.remainingAmount, payRem);
+        ob.remainingAmount -= settleAmount;
+        payRem -= settleAmount;
+        totalMatchedPaid += settleAmount;
+
+        // حساب أيام السداد الفعلية للمبلغ المسدد
+        const daysToPay = ob.date ? Math.max(0, Math.floor((payDate - ob.date) / (1000 * 60 * 60 * 24))) : 0;
+
+        settlements.push({
+          obligationId: ob.id,
+          isOpening: ob.isOpening,
+          settleAmount: settleAmount,
+          invoiceDate: ob.date,
+          paymentDate: payDate,
+          daysToPay: daysToPay
+        });
+      }
+
+      // إذا تبقى من السداد جزء لم يقابله أي التزام (دفعات مقدمة / رصيد دائن)
+      if (payRem > 0) {
+        unappliedPayments += payRem;
+      }
+    }
+  }
+
+  // حساب أعمار الديون للمبالغ المتبقية غير المسددة حتى نهاية الفترة
+  const asOfDate = globalEnd || new Date();
+  const agingBuckets = {
+    current: 0,   // 0 - 30 يوم
+    days30: 0,    // للتوافق مع الواجهات
+    days60: 0,    // 31 - 60 يوم
+    days90: 0,    // 61 - 90 يوم
+    over90: 0,    // > 90 يوم (شامل الديون السابقة المرحلة)
+    total: 0
+  };
+
+  let overdueAmount = 0; // مديونيات متأخرة تجاوزت 30 يوماً
+  let oldestOpenInvoiceDays = 0;
+
+  for (const ob of obligations) {
+    if (ob.remainingAmount > 0.005) {
+      if (ob.isOpening) {
+        // رصيد أول المدة غير المسدد: دين قديم مرحل من فترات سابقة -> شريحة > 90 يوم
+        agingBuckets.over90 += ob.remainingAmount;
+        overdueAmount += ob.remainingAmount;
+        const opDays = ob.date ? Math.max(91, Math.floor((asOfDate - ob.date) / (1000 * 60 * 60 * 24))) : 91;
+        if (opDays > oldestOpenInvoiceDays) oldestOpenInvoiceDays = opDays;
+      } else {
+        const invAge = ob.date ? Math.max(0, Math.floor((asOfDate - ob.date) / (1000 * 60 * 60 * 24))) : 0;
+        if (invAge > oldestOpenInvoiceDays) oldestOpenInvoiceDays = invAge;
+
+        if (invAge <= 30) {
+          agingBuckets.current += ob.remainingAmount;
+        } else if (invAge <= 60) {
+          agingBuckets.days60 += ob.remainingAmount;
+          overdueAmount += ob.remainingAmount;
+        } else if (invAge <= 90) {
+          agingBuckets.days90 += ob.remainingAmount;
+          overdueAmount += ob.remainingAmount;
+        } else {
+          agingBuckets.over90 += ob.remainingAmount;
+          overdueAmount += ob.remainingAmount;
+        }
+      }
+    }
+  }
+
+  // تقريب مبالغ أعمار الديون وحساب النسب
+  agingBuckets.days30 = agingBuckets.current;
+  agingBuckets.total = agingBuckets.current + agingBuckets.days60 + agingBuckets.days90 + agingBuckets.over90;
+  if (agingBuckets.total > 0) {
+    agingBuckets.currentPct = roundTo((agingBuckets.current / agingBuckets.total) * 100, 1);
+    agingBuckets.days30Pct = agingBuckets.currentPct;
+    agingBuckets.days60Pct = roundTo((agingBuckets.days60 / agingBuckets.total) * 100, 1);
+    agingBuckets.days90Pct = roundTo((agingBuckets.days90 / agingBuckets.total) * 100, 1);
+    agingBuckets.over90Pct = roundTo((agingBuckets.over90 / agingBuckets.total) * 100, 1);
   } else {
-    buckets.currentPct = 0;
-    buckets.days30Pct = 0;
-    buckets.days60Pct = 0;
-    buckets.days90Pct = 0;
-    buckets.over90Pct = 0;
+    agingBuckets.currentPct = 0; agingBuckets.days30Pct = 0; agingBuckets.days60Pct = 0; agingBuckets.days90Pct = 0; agingBuckets.over90Pct = 0;
+  }
+  agingBuckets.current = roundTo(agingBuckets.current, 2);
+  agingBuckets.days30 = roundTo(agingBuckets.days30, 2);
+  agingBuckets.days60 = roundTo(agingBuckets.days60, 2);
+  agingBuckets.days90 = roundTo(agingBuckets.days90, 2);
+  agingBuckets.over90 = roundTo(agingBuckets.over90, 2);
+  agingBuckets.total = roundTo(agingBuckets.total, 2);
+
+  // الرصيد الختامي الصافي
+  const grossRemainingDebt = obligations.reduce((sum, ob) => sum + Math.max(0, ob.remainingAmount), 0);
+  const closingBalance = roundTo(grossRemainingDebt - unappliedPayments, 2);
+  const isCreditClient = (closingBalance < -0.005);
+
+  // أيام التحصيل الفعلية المرجحة للمبالغ المسددة
+  let actualCollectionDays = 0;
+  if (totalMatchedPaid > 0) {
+    const weightedSum = settlements.reduce((sum, s) => sum + (s.settleAmount * s.daysToPay), 0);
+    actualCollectionDays = roundTo(weightedSum / totalMatchedPaid, 1);
   }
 
-  // تقريب المبالغ
-  buckets.current = roundTo(buckets.current, 2);
-  buckets.days30 = roundTo(buckets.days30, 2);
-  buckets.days60 = roundTo(buckets.days60, 2);
-  buckets.days90 = roundTo(buckets.days90, 2);
-  buckets.over90 = roundTo(buckets.over90, 2);
-  buckets.total = roundTo(buckets.total, 2);
+  // احتساب DSO المعتمد:
+  let dso = 0;
+  if (isCreditClient) {
+    dso = 0;
+  } else if (closingBalance <= 0) {
+    // عميل مصفّي حسابه بالكامل: سرعة تحصيله هي أيامه الفعلية المسددة (0 إن كان كاش فوري، أو 12 إن سدد بعد 12 يوم)
+    dso = actualCollectionDays;
+  } else {
+    // عميل لديه مديونية معلقة متبقية:
+    // مزيج مرجح بين المبالغ المسددة بأيامها، والمبالغ المتبقية المفتوحة بأعمارها الحالية
+    const weightedPaid = settlements.reduce((sum, s) => sum + (s.settleAmount * s.daysToPay), 0);
+    let weightedOpen = 0;
+    for (const ob of obligations) {
+      if (ob.remainingAmount > 0.005) {
+        const age = ob.isOpening 
+          ? (ob.date ? Math.max(91, Math.floor((asOfDate - ob.date) / (1000 * 60 * 60 * 24))) : 91)
+          : (ob.date ? Math.max(0, Math.floor((asOfDate - ob.date) / (1000 * 60 * 60 * 24))) : 0);
+        weightedOpen += ob.remainingAmount * age;
+      }
+    }
+    const totalExposure = totalMatchedPaid + grossRemainingDebt;
+    dso = totalExposure > 0 ? roundTo((weightedPaid + weightedOpen) / totalExposure, 1) : 0;
+  }
 
-  return buckets;
+  // نسب التحصيل
+  const netSales = Math.max(0, totalSales - totalReturns);
+  const totalDue = Math.max(0, openingBalance) + netSales;
+  let collectionRate = isCreditClient ? 100 : 0;
+  if (totalDue > 0) {
+    collectionRate = Math.min(100, roundTo((totalPayments / totalDue) * 100, 1));
+  } else if (closingBalance <= 0) {
+    collectionRate = 100;
+  }
+
+  // نسبة تحصيل مبيعات الفترة الحالية وحدها
+  let periodSalesCollectionRate = 100;
+  if (netSales > 0) {
+    const periodMatched = settlements.filter(s => !s.isOpening).reduce((s, item) => s + item.settleAmount, 0);
+    periodSalesCollectionRate = Math.min(100, roundTo((periodMatched / netSales) * 100, 1));
+  }
+
+  // تقييم كفاية البيانات (dataCoverage)
+  let dataCoverage = 'full';
+  if (openingBalance === 0 && clientTenureDays < (periodDays * 0.5)) {
+    dataCoverage = 'new_client';
+  } else if (records.length < 3) {
+    dataCoverage = 'partial';
+  }
+
+  return {
+    totalSales: roundTo(netSales, 2),
+    totalGrossSales: roundTo(totalSales, 2),
+    totalReturns: roundTo(totalReturns, 2),
+    totalPayments: roundTo(totalPayments, 2),
+    matchedPaidAmount: roundTo(totalMatchedPaid, 2),
+    unappliedPayments: roundTo(unappliedPayments, 2),
+    closingBalance,
+    isCreditClient,
+    actualCollectionDays,
+    dso,
+    collectionRate,
+    periodSalesCollectionRate,
+    agingBuckets,
+    overdueAmount: roundTo(overdueAmount, 2),
+    oldestOpenInvoiceDays,
+    clientTenureDays,
+    dataCoverage,
+    creditExposure: Math.max(0, closingBalance),
+    chronologicalEvents,
+    clientFirstDate,
+    clientLastDate
+  };
+}
+
+/**
+ * حساب متوسط المديونية اليومية المرجحة بالزمن
+ * Average Receivables = (مجموع الأرصدة الختامية لكل يوم من أيام الفترة N) ÷ N
+ */
+function calculateDailyAverageReceivables(chronologicalEvents, openingBalance, startDate, endDate, periodDays) {
+  if (!periodDays || periodDays <= 0) return 0;
+  if (!startDate || !endDate) return roundTo(Math.max(0, openingBalance), 2);
+
+  const startMs = (startDate instanceof Date ? startDate : new Date(startDate)).getTime();
+  const endMs = (endDate instanceof Date ? endDate : new Date(endDate)).getTime();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const numDays = Math.max(1, Math.round((endMs - startMs) / dayMs) + 1);
+
+  let currentBal = Math.max(0, openingBalance);
+  let totalDailyBalance = 0;
+  let lastTime = startMs;
+
+  for (const ev of chronologicalEvents) {
+    if (!ev.date) continue;
+    const evTime = Math.min(Math.max(ev.date.getTime(), startMs), endMs);
+    const daysInterval = Math.max(0, (evTime - lastTime) / dayMs);
+
+    if (daysInterval > 0) {
+      totalDailyBalance += currentBal * daysInterval;
+      lastTime = evTime;
+    }
+
+    if (ev.type === 'invoice') {
+      currentBal += ev.amount;
+    } else if (ev.type === 'payment' || ev.type === 'return') {
+      currentBal = Math.max(0, currentBal - ev.amount);
+    }
+  }
+
+  // الفترة من آخر حركة حتى نهاية التقرير
+  const remainingDays = Math.max(0, (endMs - lastTime) / dayMs);
+  totalDailyBalance += currentBal * remainingDays;
+
+  const totalPeriodToDivide = Math.max(numDays, periodDays);
+  return roundTo(totalDailyBalance / totalPeriodToDivide, 2);
 }
 
 /**
@@ -409,78 +636,6 @@ function getClosingBalance(sortedRecords) {
     }
   }
   return 0;
-}
-
-/**
- * حساب متوسط رصيد المدينين وفق المعايير المالية الحديثة (CMA / IFRS / البنوك)
- * يستخدم متوسط الرصيد اليومي المرجح بالزمن (Time-Weighted Daily Average Balance)
- * لتفادي تشوه النسب عند تصفية الحسابات في نهاية الفترة أو وجود مبالغ فكة متبقية.
- */
-function calculateAverageReceivables(sortedRecords, openingBalance, closingBalance, totalSales, periodDays, startDate, endDate) {
-  // تصفية السجلات ذات التواريخ الصالحة
-  const validDated = sortedRecords.filter(r => r.date instanceof Date && !isNaN(r.date.getTime()));
-
-  if (validDated.length > 0 && startDate && endDate && periodDays > 0) {
-    let currentBalance = openingBalance;
-    let totalWeightedBalance = 0;
-    let lastTime = (startDate instanceof Date ? startDate : new Date(startDate)).getTime();
-    const endTime = (endDate instanceof Date ? endDate : new Date(endDate)).getTime();
-
-    // فرز المعاملات زمنياً
-    const dateSorted = [...validDated].sort((a, b) => a.date - b.date);
-
-    for (const r of dateSorted) {
-      const txTime = Math.min(Math.max(r.date.getTime(), lastTime), endTime);
-      const daysDiff = (txTime - lastTime) / (1000 * 60 * 60 * 24);
-
-      if (daysDiff > 0) {
-        totalWeightedBalance += Math.max(0, currentBalance) * daysDiff;
-        lastTime = txTime;
-      }
-
-      // تحديث الرصيد بعد الحركة (معاملة الرصيد الدائن السالب كمديونية صفرية)
-      if (r.balance !== null && r.balance !== undefined && !isNaN(r.balance)) {
-        currentBalance = Math.max(0, r.balance);
-      } else {
-        const inv = r.invoiceAmount || 0;
-        const pay = r.paymentAmount || 0;
-        currentBalance = Math.max(0, currentBalance + inv - pay);
-      }
-    }
-
-    // الفترة من تاريخ آخر حركة حتى نهاية الفترة المالية
-    const remainingDays = Math.max(0, (endTime - lastTime) / (1000 * 60 * 60 * 24));
-    totalWeightedBalance += Math.max(0, currentBalance) * remainingDays;
-
-    const timeWeightedAvg = totalWeightedBalance / periodDays;
-    if (timeWeightedAvg > 0) {
-      return roundTo(timeWeightedAvg, 2);
-    }
-  }
-
-  // إذا لم تتوفر تواريخ دقيقة ولكن توجد معاملات متعددة:
-  if (sortedRecords.length > 1) {
-    let running = openingBalance;
-    let sumRunning = 0;
-    let count = 0;
-
-    for (const r of sortedRecords) {
-      if (r.balance !== null && r.balance !== undefined && !isNaN(r.balance)) {
-        running = Math.max(0, r.balance);
-      } else {
-        running = Math.max(0, running + (r.invoiceAmount || 0) - (r.paymentAmount || 0));
-      }
-      sumRunning += running;
-      count++;
-    }
-
-    if (count > 0 && (sumRunning / count) > 0) {
-      return roundTo(sumRunning / count, 2);
-    }
-  }
-
-  // الطريقة التقليدية (متوسط رصيد أول وآخر المدة):
-  return roundTo((openingBalance + closingBalance) / 2, 2);
 }
 
 /**
