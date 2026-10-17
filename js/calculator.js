@@ -99,8 +99,29 @@ function calculateClientMetrics(clientName, records, settings) {
     if (!endDate) endDate = validRecordsWithDate[validRecordsWithDate.length - 1].date;
   }
 
-  // رصيد أول المدة
-  const openingBalance = getOpeningBalance(records);
+  // استخراج رصيد آخر المدة ورصيد أول المدة الصريحين من السجلات
+  const explicitClosing = getExplicitClosingBalance(records);
+  let openingBalance = getOpeningBalance(records);
+
+  // إذا لم يتوفر رصيد أول المدة (أو كان صفر) بينما يتوفر رصيد آخر مدة صريح من شيت الأرصدة / تقرير ERP:
+  // نستنتج رصيد أول المدة بالمعادلة المحاسبية المعتمدة: رصيد أول المدة = رصيد آخر المدة + السدادات - المبيعات الصافية
+  if ((!openingBalance || openingBalance === 0) && explicitClosing !== null) {
+    let rawSales = 0;
+    let rawReturns = 0;
+    let rawPayments = 0;
+    for (const r of records) {
+      const inv = Number(r.invoiceAmount) || 0;
+      const pay = Number(r.paymentAmount) || 0;
+      if (inv > 0) rawSales += inv;
+      else if (inv < 0) rawReturns += Math.abs(inv);
+      if (pay > 0) rawPayments += pay;
+    }
+    const netSales = Math.max(0, rawSales - rawReturns);
+    const impliedOp = roundTo(explicitClosing + rawPayments - netSales, 2);
+    if (impliedOp > 0.01) {
+      openingBalance = impliedOp;
+    }
+  }
 
   // ═══════════════════════════════════════════════
   // تشغيل المحرك الزمني لتسوية الفواتير والمقبوضات
@@ -572,8 +593,33 @@ function reconcileClientTimeline(records, openingBalance, periodSettings) {
 
   // الرصيد الختامي الصافي
   const grossRemainingDebt = obligations.reduce((sum, ob) => sum + Math.max(0, ob.remainingAmount), 0);
-  const closingBalance = roundTo(grossRemainingDebt - unappliedPayments, 2);
-  const isCreditClient = (closingBalance < -0.005);
+
+  // فحص ما إذا كان هناك رصيد إقفال صريح أو إشارة دائن صريحة من شيت معتمد
+  const explicitClosing = getExplicitClosingBalance(records);
+  const hasExplicitCredit = records.some(r => r.isCredit === true || (r.closingBalance !== null && r.closingBalance < -0.005) || (r.balance !== null && r.balance < -0.005));
+
+  let closingBalance = 0;
+  let isCreditClient = false;
+
+  if (explicitClosing !== null) {
+    // 1. إذا توفر رصيد آخر المدة صراحة من كشف أرصدة أو تقرير ERP
+    closingBalance = roundTo(explicitClosing, 2);
+    isCreditClient = (closingBalance < -0.005);
+  } else if (hasExplicitCredit) {
+    // 2. إذا تم تأكيد أن العميل دائن (له رصيد / دفعة مقدمة) من خلال شيت الأرصدة أو عمود الحالة
+    closingBalance = roundTo(grossRemainingDebt - unappliedPayments, 2);
+    isCreditClient = (closingBalance < -0.005);
+  } else if ((!openingBalance || openingBalance === 0) && (unappliedPayments > grossRemainingDebt)) {
+    // 3. في حال غياب رصيد أول المدة وسداد العميل مبالغ أكبر من فواتير الفترة الحالية:
+    // هذه المبالغ كانت تسوية لمديونيات سنوات سابقة (مثل 2025)، وليست سداداً مقدماً وهمياً.
+    // لذا يكون حسابه مصفياً (رصيد = 0) دون اعتباره عميلاً دائناً.
+    closingBalance = 0;
+    isCreditClient = false;
+  } else {
+    // 4. الحساب الطبيعي
+    closingBalance = roundTo(grossRemainingDebt - unappliedPayments, 2);
+    isCreditClient = (closingBalance < -0.005);
+  }
 
   // أيام التحصيل الفعلية المرجحة للمبالغ المسددة
   let actualCollectionDays = 0;
@@ -713,6 +759,20 @@ function getOpeningBalance(sortedRecords) {
     }
   }
   return 0;
+}
+
+/**
+ * استخراج رصيد آخر المدة الصريح (من كشف أرصدة أو عمود معتمد)
+ * يُرجع null في حال عدم وجود عمود أو قيمة صريحة لرصيد الإقفال
+ */
+function getExplicitClosingBalance(sortedRecords) {
+  for (let i = sortedRecords.length - 1; i >= 0; i--) {
+    const record = sortedRecords[i];
+    if (record.closingBalance !== null && record.closingBalance !== undefined && !isNaN(record.closingBalance)) {
+      return roundTo(record.closingBalance, 2);
+    }
+  }
+  return null;
 }
 
 /**

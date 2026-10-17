@@ -180,7 +180,7 @@ const Renderer = {
       <div class="card">
         <div class="aging-summary" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
           <div class="aging-total">
-            <span class="aging-total-label">صافي رصيد السوق (مطابق لبرنامج ERP)</span>
+            <span class="aging-total-label">صافي رصيد السوق</span>
             <span class="aging-total-value" style="color: var(--accent-primary); font-size: 1.6rem; font-weight: 800;">${formatNumber(netBalance)} جنيه</span>
             <span style="display: block; font-size: 0.82rem; margin-top: 5px; color: var(--text-secondary);">
               إجمالي المدينين: <strong style="color: var(--text-primary);">${formatNumber(grossReceivables)}</strong> جنيه
