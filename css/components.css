@@ -640,8 +640,8 @@
   background-color: var(--bg-surface);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
-  max-width: 680px;
-  width: 100%;
+  max-width: 900px;
+  width: 95%;
   max-height: 85vh;
   overflow-y: auto;
   z-index: var(--z-modal);

@@ -583,6 +583,20 @@ function applyMapping(sheetsData, sheetMappings) {
       const signedOpeningBalance = openingBalance !== null ? (isCredit ? -Math.abs(openingBalance) : Math.abs(openingBalance)) : null;
       const signedClosingBalance = closingBalance !== null ? (isCredit ? -Math.abs(closingBalance) : Math.abs(closingBalance)) : null;
 
+      // استخراج البيان ورقم السند/الفاتورة لإنشاء كشف الحساب المتزامن بدقة
+      let docNo = '';
+      let details = '';
+      for (const [k, v] of Object.entries(row)) {
+        if (v === null || v === undefined) continue;
+        const kn = normalizeText(k);
+        if (!docNo && (kn.includes('سند') || kn.includes('فاتورة') || kn.includes('رقم') || kn === 'id' || kn === 'code')) {
+          docNo = String(v).trim();
+        }
+        if (!details && (kn.includes('بيان') || kn.includes('وصف') || kn.includes('ملاحظ') || kn.includes('تفاصيل') || kn.includes('شرح'))) {
+          details = String(v).trim();
+        }
+      }
+
       clientEntry.records.push({
         clientName: clientEntry.displayName,
         date,
@@ -591,6 +605,8 @@ function applyMapping(sheetsData, sheetMappings) {
         balance: signedBalance,
         openingBalance: signedOpeningBalance,
         closingBalance: signedClosingBalance,
+        docNo: docNo,
+        details: details,
         isCredit: isCredit,
         balanceType: isCredit ? 'credit' : 'debit',
         source: `${sheet.fileName} / ${sheet.sheetName}`
@@ -612,7 +628,7 @@ function applyMapping(sheetsData, sheetMappings) {
 }
 
 /**
- * تحويل التاريخ
+ * تحويل التاريخ مع دعم التوقيت بالكامل والأرقام العربية ورموز (ص / م)
  */
 function parseDate(value) {
   if (!value) return null;
@@ -622,27 +638,45 @@ function parseDate(value) {
     return isNaN(value.getTime()) ? null : value;
   }
 
-  const str = String(value).trim();
+  let str = String(value).trim();
 
-  // محاولة التحويل المباشر
+  // تنظيف الأرقام الهندية (المشرقية) والرموز العربية للصباح والمساء (ص / م)
+  str = str
+    .replace(/[٠-٩]/g, d => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)])
+    .replace(/(\d{1,2}:\d{1,2}(?::\d{1,2})?)\s*([صم])/g, (m, time, ap) => (ap === 'م' ? `${time} PM` : `${time} AM`))
+    .replace(/([صم])\s*(\d{1,2}:\d{1,2}(?::\d{1,2})?)/g, (m, ap, time) => (ap === 'م' ? `${time} PM` : `${time} AM`))
+    .replace(/\s*م$/g, ' PM')
+    .replace(/\s*ص$/g, ' AM');
+
+  // محاولة التحويل المباشر بعد التنظيف
   const direct = new Date(str);
   if (!isNaN(direct.getTime())) return direct;
 
   // محاولة أنماط مختلفة
-  // DD/MM/YYYY أو DD-MM-YYYY
-  const dmyMatch = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  // DD/MM/YYYY أو DD-MM-YYYY (مع وقت اختياري)
+  const dmyMatch = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?(?:\s*(AM|PM))?)?$/i);
   if (dmyMatch) {
-    let [, day, month, year] = dmyMatch;
+    let [, day, month, year, hours, minutes, seconds, ap] = dmyMatch;
     if (year.length === 2) year = '20' + year;
-    const d = new Date(year, month - 1, day);
+    let h = hours ? parseInt(hours, 10) : 0;
+    if (ap) {
+      if (ap.toUpperCase() === 'PM' && h < 12) h += 12;
+      if (ap.toUpperCase() === 'AM' && h === 12) h = 0;
+    }
+    const d = new Date(year, month - 1, day, h, minutes ? parseInt(minutes, 10) : 0, seconds ? parseInt(seconds, 10) : 0);
     if (!isNaN(d.getTime())) return d;
   }
 
-  // YYYY/MM/DD
-  const ymdMatch = str.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+  // YYYY/MM/DD أو YYYY-MM-DD (مع وقت اختياري)
+  const ymdMatch = str.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?(?:\s*(AM|PM))?)?$/i);
   if (ymdMatch) {
-    const [, year, month, day] = ymdMatch;
-    const d = new Date(year, month - 1, day);
+    let [, year, month, day, hours, minutes, seconds, ap] = ymdMatch;
+    let h = hours ? parseInt(hours, 10) : 0;
+    if (ap) {
+      if (ap.toUpperCase() === 'PM' && h < 12) h += 12;
+      if (ap.toUpperCase() === 'AM' && h === 12) h = 0;
+    }
+    const d = new Date(year, month - 1, day, h, minutes ? parseInt(minutes, 10) : 0, seconds ? parseInt(seconds, 10) : 0);
     if (!isNaN(d.getTime())) return d;
   }
 

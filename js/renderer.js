@@ -477,12 +477,88 @@ const Renderer = {
             ${isCash ? '0.0% (سعر الكاش)' : `+${formatPercent(client.totalMarkupPct)}`}
           </span>
         </div>
+        <div class="client-detail-item">
+          <span class="detail-label">أيام التحصيل المتزامنة</span>
+          <span class="detail-value" style="color: var(--accent-success); font-weight: 600;">
+            ${formatNumber(client.actualCollectionDays, 1)} يوم ${client.actualCollectionDays <= 1.5 ? '⚡ (سداد فوري)' : ''}
+          </span>
+        </div>
+        <div class="client-detail-item">
+          <span class="detail-label">أقصى سحب لحظي (Peak)</span>
+          <span class="detail-value" style="font-weight: 600;">${formatNumber(client.peakExposure || 0)} جنيه</span>
+        </div>
       </div>
 
-      <h4 style="margin-bottom: var(--space-3); font-size: var(--text-base);">التوصيات</h4>
+      <h4 style="margin-top: var(--space-4); margin-bottom: var(--space-3); font-size: var(--text-base);">التوصيات</h4>
       <div class="client-recommendations">
         ${recommendations.map(r => `<div class="recommendation-item">${r}</div>`).join('')}
       </div>
+
+      <!-- خريطة كشف الحساب المتزامن للعميل -->
+      ${(client.statementLedger && client.statementLedger.length > 0) ? `
+        <div style="margin-top: var(--space-5); border-top: 2px solid var(--border-default); padding-top: var(--space-4);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-3); flex-wrap: wrap; gap: 8px;">
+            <h4 style="margin:0; font-size: var(--text-base); display:flex; align-items:center; gap:8px;">
+              <span>📋 خريطة كشف الحساب المتزامن (التسلسل الزمني للفواتير والسدادات)</span>
+              <span class="badge badge-good" style="font-size:0.75rem;">${client.statementLedger.length} حركة</span>
+            </h4>
+            <div style="font-size: var(--text-xs); color: var(--text-secondary);">
+              أعلى سقف مديونية: <strong style="color:var(--text-primary); font-size: var(--text-sm);">${formatNumber(client.peakExposure || 0)} جنيه</strong>
+            </div>
+          </div>
+
+          <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-default); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+            <table class="data-table" style="font-size: var(--text-xs); width: 100%; border-collapse: collapse; min-width: 650px;">
+              <thead style="position: sticky; top: 0; background: var(--bg-surface-elevated); z-index: 2; box-shadow: 0 1px 0 var(--border-default);">
+                <tr>
+                  <th style="padding: 10px 8px; text-align: center;">#</th>
+                  <th style="padding: 10px 8px;">التاريخ والوقت</th>
+                  <th style="padding: 10px 8px; text-align: center;">نوع الحركة</th>
+                  <th style="padding: 10px 8px;">البيان / السند</th>
+                  <th style="padding: 10px 8px; text-align: left;">مدين (فاتورة)</th>
+                  <th style="padding: 10px 8px; text-align: left;">دائن (سداد)</th>
+                  <th style="padding: 10px 8px; text-align: left;">الرصيد اللحظي</th>
+                  <th style="padding: 10px 8px;">سرعة التسوية المتزامنة</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${client.statementLedger.map((row, idx) => {
+                  const dateStr = row.date ? (row.date instanceof Date ? row.date.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short', numberingSystem: 'latn' }) : String(row.date)) : '—';
+                  const balColor = row.balance > 0 ? 'var(--accent-danger)' : (row.balance < 0 ? 'var(--accent-success)' : 'var(--text-secondary)');
+                  let typeBadgeClass = 'badge-average';
+                  if (row.type === 'invoice') typeBadgeClass = 'badge-poor';
+                  if (row.type === 'payment') typeBadgeClass = 'badge-good';
+                  if (row.type === 'opening') typeBadgeClass = 'badge-average';
+                  if (row.type === 'return') typeBadgeClass = 'badge-warning';
+
+                  return `
+                    <tr style="border-bottom: 1px solid var(--border-subtle); background-color: ${idx % 2 === 0 ? 'transparent' : 'var(--bg-surface-elevated)'};">
+                      <td style="padding: 8px; text-align: center; color: var(--text-tertiary); font-weight: 500;">${idx + 1}</td>
+                      <td style="padding: 8px; white-space: nowrap; font-family: monospace;">${dateStr}</td>
+                      <td style="padding: 8px; text-align: center;"><span class="badge ${typeBadgeClass}" style="font-size:0.7rem; padding: 2px 6px;">${row.typeLabel || row.type}</span></td>
+                      <td style="padding: 8px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(row.details || row.docNo || '')}">
+                        ${escapeHTML(row.docNo ? `${row.docNo}: ${row.details}` : (row.details || '—'))}
+                      </td>
+                      <td style="padding: 8px; text-align: left; font-weight: 600; color: ${row.debit > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)'};">
+                        ${row.debit > 0 ? formatNumber(row.debit) : '—'}
+                      </td>
+                      <td style="padding: 8px; text-align: left; font-weight: 600; color: ${row.credit > 0 ? 'var(--accent-success)' : 'var(--text-tertiary)'};">
+                        ${row.credit > 0 ? formatNumber(row.credit) : '—'}
+                      </td>
+                      <td style="padding: 8px; text-align: left; font-weight: 700; color: ${balColor};">
+                        ${formatNumber(row.balance)}
+                      </td>
+                      <td style="padding: 8px; white-space: nowrap;">
+                        ${row.speedText && row.speedText !== '—' ? `<span style="font-size:0.75rem; color: ${row.speedText.includes('فوري') || row.speedText.includes('نفس') || row.speedText.includes('التالي') ? 'var(--accent-success)' : 'var(--accent-warning)'}; font-weight: 600;">⚡ ${escapeHTML(row.speedText)}</span>` : '<span style="color:var(--text-tertiary);">—</span>'}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ` : ''}
     `;
 
     modal.classList.add('active');

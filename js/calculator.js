@@ -222,6 +222,8 @@ function calculateClientMetrics(clientName, records, settings) {
     clientTenureDays: timeline.clientTenureDays,
     dataCoverage: timeline.dataCoverage,
     creditExposure: timeline.creditExposure,
+    peakExposure: timeline.peakExposure,
+    statementLedger: timeline.statementLedger,
 
     // القسم الثاني — الجدوى وجودة العميل
     hurdleRate: roundTo(hurdleRate, 2),
@@ -357,8 +359,10 @@ function reconcileClientTimeline(records, openingBalance, periodSettings) {
   let invCounter = 1;
   for (const event of chronologicalEvents) {
     if (event.type === 'invoice') {
+      const docNo = event.source?.docNo || `فاتورة #${invCounter}`;
       obligations.push({
         id: `inv_${invCounter++}`,
+        docNo: docNo,
         type: 'invoice',
         date: event.date || clientFirstDate,
         originalAmount: event.amount,
@@ -368,14 +372,38 @@ function reconcileClientTimeline(records, openingBalance, periodSettings) {
     }
   }
 
-  // تسوية السدادات والمرتجعات بنظام FIFO
+  // ══════════════════════════════════════════════════════════════
+  // بناء خريطة كشف الحساب المتزامن اللحظي (Detailed Synchronized Ledger)
+  // ══════════════════════════════════════════════════════════════
+  let runningLedgerBal = roundTo(openingBalance || 0, 2);
+  let peakExposure = Math.max(0, runningLedgerBal);
+  const statementLedger = [];
+
+  if (openingBalance !== 0) {
+    statementLedger.push({
+      date: globalStart || clientFirstDate,
+      type: 'opening',
+      typeLabel: 'رصيد أول المدة',
+      docNo: 'افتتاحي',
+      details: 'رصيد مرحّل من فترات سابقة',
+      debit: openingBalance > 0 ? openingBalance : 0,
+      credit: openingBalance < 0 ? Math.abs(openingBalance) : 0,
+      balance: runningLedgerBal,
+      speedText: 'رصيد مرحّل'
+    });
+  }
+
+  // تسوية السدادات والمرتجعات بنظام FIFO مع احتساب التزامن بالساعات والأيام
   const settlements = [];
   let totalMatchedPaid = 0;
   let unappliedPayments = 0;
 
   for (const event of chronologicalEvents) {
+    const docNo = event.source?.docNo || '';
+    const details = event.source?.details || '';
+
     if (event.type === 'return') {
-      // المرتجع يخفض الالتزامات المفتوحة مباشرة دون اعتباره تحصيلاً نقدياً
+      runningLedgerBal = roundTo(runningLedgerBal - event.amount, 2);
       let returnRem = event.amount;
       for (let i = obligations.length - 1; i >= 0 && returnRem > 0; i--) {
         const ob = obligations[i];
@@ -385,9 +413,36 @@ function reconcileClientTimeline(records, openingBalance, periodSettings) {
           returnRem -= deduction;
         }
       }
+      statementLedger.push({
+        date: event.date,
+        type: 'return',
+        typeLabel: 'مرتجع مبيعات',
+        docNo: docNo || 'مرتجع',
+        details: details || 'مرتجع بضاعة / إشعار دائن',
+        debit: 0,
+        credit: event.amount,
+        balance: runningLedgerBal,
+        speedText: 'تسوية مرتجع'
+      });
+    } else if (event.type === 'invoice') {
+      runningLedgerBal = roundTo(runningLedgerBal + event.amount, 2);
+      if (runningLedgerBal > peakExposure) peakExposure = runningLedgerBal;
+      statementLedger.push({
+        date: event.date,
+        type: 'invoice',
+        typeLabel: 'فاتورة بيع',
+        docNo: docNo || `فاتورة #${invCounter}`,
+        details: details || 'فاتورة بيع آجل',
+        debit: event.amount,
+        credit: 0,
+        balance: runningLedgerBal,
+        speedText: '—'
+      });
     } else if (event.type === 'payment') {
+      runningLedgerBal = roundTo(runningLedgerBal - event.amount, 2);
       let payRem = event.amount;
       const payDate = event.date || clientLastDate || globalEnd || new Date();
+      const currentPaySettles = [];
 
       for (const ob of obligations) {
         if (payRem <= 0) break;
@@ -398,23 +453,59 @@ function reconcileClientTimeline(records, openingBalance, periodSettings) {
         payRem -= settleAmount;
         totalMatchedPaid += settleAmount;
 
-        // حساب أيام السداد الفعلية للمبلغ المسدد
-        const daysToPay = ob.date ? Math.max(0, Math.floor((payDate - ob.date) / (1000 * 60 * 60 * 24))) : 0;
+        // حساب فارق الوقت الدقيق بين الفاتورة والسداد (ساعات وأيام)
+        const diffMs = (payDate && ob.date) ? Math.max(0, payDate.getTime() - ob.date.getTime()) : 0;
+        const diffHours = diffMs / (1000 * 60 * 60);
+        const diffDays = Math.max(0, diffMs / (1000 * 60 * 60 * 24));
+        // إذا سدد خلال نفس اليوم (أقل من 24 ساعة): أيام التحصيل = كسر دقيق أو 0
+        const daysToPay = (diffHours < 24) ? roundTo(diffDays, 1) : Math.round(diffDays);
 
-        settlements.push({
+        const sItem = {
           obligationId: ob.id,
+          docNo: ob.docNo,
           isOpening: ob.isOpening,
           settleAmount: settleAmount,
           invoiceDate: ob.date,
           paymentDate: payDate,
+          diffHours: diffHours,
           daysToPay: daysToPay
-        });
+        };
+        settlements.push(sItem);
+        currentPaySettles.push(sItem);
       }
 
-      // إذا تبقى من السداد جزء لم يقابله أي التزام (دفعات مقدمة / رصيد دائن)
       if (payRem > 0) {
         unappliedPayments += payRem;
       }
+
+      // نص سرعة السداد المتزامن في كشف الحساب
+      let speedText = 'دفعة مقدمة / رصيد دائن';
+      if (currentPaySettles.length > 0) {
+        const avgHours = currentPaySettles.reduce((s, item) => s + item.diffHours, 0) / currentPaySettles.length;
+        const avgDays = currentPaySettles.reduce((s, item) => s + item.daysToPay, 0) / currentPaySettles.length;
+
+        if (avgHours <= 2) {
+          speedText = 'سداد فوري (خلال ساعتين)';
+        } else if (avgHours < 24) {
+          speedText = `سداد نفس اليوم (${Math.round(avgHours)} ساعة)`;
+        } else if (avgDays <= 1.5) {
+          speedText = 'سداد اليوم التالي';
+        } else {
+          speedText = `سداد بعد ${roundTo(avgDays, 1)} يوم`;
+        }
+      }
+
+      statementLedger.push({
+        date: event.date,
+        type: 'payment',
+        typeLabel: 'سند قبض / تحصيل',
+        docNo: docNo || 'سند قبض',
+        details: details || 'تحصيل نقدي / بنكي',
+        debit: 0,
+        credit: event.amount,
+        balance: runningLedgerBal,
+        speedText: speedText
+      });
     }
   }
 
@@ -559,6 +650,8 @@ function reconcileClientTimeline(records, openingBalance, periodSettings) {
     clientTenureDays,
     dataCoverage,
     creditExposure: Math.max(0, closingBalance),
+    peakExposure: roundTo(peakExposure, 2),
+    statementLedger,
     chronologicalEvents,
     clientFirstDate,
     clientLastDate
