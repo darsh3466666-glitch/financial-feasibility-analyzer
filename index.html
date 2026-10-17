@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/variables.css?v=2.7">
   <link rel="stylesheet" href="css/base.css?v=2.7">
   <link rel="stylesheet" href="css/components.css?v=2.7">
-  <link rel="stylesheet" href="css/layout.css?v=2.7">
+  <link rel="stylesheet" href="css/layout.css?v=4.3">
   <link rel="stylesheet" href="css/charts.css?v=2.7">
 
   <!-- Favicon -->
@@ -249,6 +249,9 @@
             </div>
             <div class="table-filters">
               <button class="filter-btn active" data-filter="all">الكل</button>
+              <button class="filter-btn" data-filter="with-balance" id="filter-with-balance" style="color: var(--accent-danger); font-weight: 700;">
+                عليهم رصيد <span class="filter-badge" id="with-balance-count">0</span>
+              </button>
               <button class="filter-btn" data-filter="good">A ممتاز</button>
               <button class="filter-btn" data-filter="average">B عادي</button>
               <button class="filter-btn" data-filter="poor">C بطيء</button>
@@ -271,6 +274,10 @@
                   </th>
                   <th data-sort="totalSales">
                     إجمالي المبيعات
+                    <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
+                  </th>
+                  <th data-sort="closingBalance">
+                    رصيد آخر المدة
                     <span class="sort-indicator"><svg style="width:12px;height:12px"><use href="#arrow-down"></use></svg></span>
                   </th>
                   <th data-sort="avgReceivables">
@@ -413,15 +420,15 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 
   <!-- Application Scripts -->
-  <script src="js/excel-parser.js?v=4.2"></script>
-  <script src="js/calculator.js?v=4.2"></script>
-  <script src="js/classifier.js?v=4.2"></script>
-  <script src="js/pricing-engine.js?v=4.2"></script>
-  <script src="js/renderer.js?v=4.2"></script>
-  <script src="js/charts.js?v=4.2"></script>
-  <script src="js/exporter.js?v=4.2"></script>
-  <script src="js/theme.js?v=4.2"></script>
-  <script src="js/app.js?v=4.2"></script>
+  <script src="js/excel-parser.js?v=4.3"></script>
+  <script src="js/calculator.js?v=4.3"></script>
+  <script src="js/classifier.js?v=4.3"></script>
+  <script src="js/pricing-engine.js?v=4.3"></script>
+  <script src="js/renderer.js?v=4.3"></script>
+  <script src="js/charts.js?v=4.3"></script>
+  <script src="js/exporter.js?v=4.3"></script>
+  <script src="js/theme.js?v=4.3"></script>
+  <script src="js/app.js?v=4.3"></script>
 
 </body>
 </html>

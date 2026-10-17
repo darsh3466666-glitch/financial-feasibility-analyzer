@@ -418,6 +418,7 @@ const App = {
       Renderer.renderAgingReport(summary);
       Renderer.renderPricingTable(pricingReport, pricingSummary, settings.cashPricePerTon);
       Renderer.renderSalesAnalysis(salesByClass);
+      this.updateFilterCounts();
       this.refreshTable();
       ChartsManager.renderAll(classifiedClients, salesByClass, summary);
 
@@ -432,6 +433,18 @@ const App = {
   },
 
   /**
+   * تحديث أعداد العملاء في أزرار الفلاتر
+   */
+  updateFilterCounts() {
+    if (!this.state.classifiedClients) return;
+    const withBalanceCount = this.state.classifiedClients.filter(c => (c.closingBalance || 0) > 0.01).length;
+    const badgeEl = document.getElementById('with-balance-count');
+    if (badgeEl) {
+      badgeEl.textContent = formatNumber(withBalanceCount);
+    }
+  },
+
+  /**
    * تحديث الجدول (فلترة + بحث + فرز)
    */
   refreshTable() {
@@ -439,9 +452,11 @@ const App = {
 
     let filtered = [...this.state.classifiedClients];
 
-    // فلترة التصنيف والجدوى
+    // فلترة التصنيف والجدوى ورصيد آخر المدة
     if (this.state.filterClass !== 'all') {
-      if (this.state.filterClass === 'feasible') {
+      if (this.state.filterClass === 'with-balance') {
+        filtered = filtered.filter(c => (c.closingBalance || 0) > 0.01);
+      } else if (this.state.filterClass === 'feasible') {
         filtered = filtered.filter(c => c.isFeasible);
       } else if (this.state.filterClass === 'not-feasible') {
         filtered = filtered.filter(c => !c.isFeasible);

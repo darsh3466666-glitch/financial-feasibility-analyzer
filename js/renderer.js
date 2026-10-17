@@ -330,9 +330,15 @@ const Renderer = {
         let valA = a[sortConfig.key];
         let valB = b[sortConfig.key];
 
+        if (sortConfig.key === 'closingBalance') {
+          valA = a.closingBalance || 0;
+          valB = b.closingBalance || 0;
+        }
         if (sortConfig.key === 'annualizedTurnover') {
-          if (!a.avgReceivables || a.avgReceivables === 0 || a.dso === 0 || a.dso < 1 || a.annualizedTurnover >= 365) valA = Infinity;
-          if (!b.avgReceivables || b.avgReceivables === 0 || b.dso === 0 || b.dso < 1 || b.annualizedTurnover >= 365) valB = Infinity;
+          valA = a.arTurnover !== undefined ? a.arTurnover : a.annualizedTurnover;
+          valB = b.arTurnover !== undefined ? b.arTurnover : b.annualizedTurnover;
+          if (!a.avgReceivables || a.avgReceivables === 0 || a.dso === 0 || a.isCredit) valA = Infinity;
+          if (!b.avgReceivables || b.avgReceivables === 0 || b.dso === 0 || b.isCredit) valB = Infinity;
         }
         if (sortConfig.key === 'isFeasible') {
           valA = a.isFeasible ? 1 : 0;
@@ -363,6 +369,16 @@ const Renderer = {
       const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : formatNumber(client.arTurnover !== undefined ? client.arTurnover : client.annualizedTurnover, 2));
       const dsoText = isCredit ? '0 يوم (دائن)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 1)} يوم`);
 
+      const closingVal = client.closingBalance || 0;
+      let closingHtml = '';
+      if (closingVal < 0) {
+        closingHtml = `<span style="color: var(--accent-success); font-weight: 600;" title="رصيد دائن / دفعة مقدمة">${formatNumber(Math.abs(closingVal))} (دائن)</span>`;
+      } else if (closingVal > 0) {
+        closingHtml = `<span style="font-weight: 700; color: var(--accent-danger);">${formatNumber(closingVal)}</span>`;
+      } else {
+        closingHtml = `<span style="color: var(--text-secondary); opacity: 0.5;">0</span>`;
+      }
+
       let classColor = 'var(--accent-success)';
       if (client.classification === 'average') classColor = 'var(--accent-warning)';
       if (client.classification === 'poor') classColor = 'var(--accent-danger)';
@@ -381,6 +397,7 @@ const Renderer = {
           ${isCredit ? ` <span class="badge badge-good" style="font-size:0.65rem; padding: 2px 6px; margin-right: 4px;" title="رصيد دائن / دفعة مقدمة">دائن</span>` : ''}
         </td>
         <td class="num-cell">${formatNumber(client.totalSales)}</td>
+        <td class="num-cell">${closingHtml}</td>
         <td class="num-cell">${formatNumber(client.avgReceivables)}</td>
         <td class="num-cell" style="${isCash ? 'color: var(--accent-success); font-weight: var(--weight-bold);' : ''}">${turnoverText}</td>
         <td class="num-cell" style="${isCash ? 'color: var(--accent-success);' : ''}">${dsoText}</td>
