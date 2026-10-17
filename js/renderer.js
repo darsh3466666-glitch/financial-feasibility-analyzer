@@ -359,9 +359,9 @@ const Renderer = {
 
     container.innerHTML = sorted.map((client, index) => {
       const isCredit = client.isCredit;
-      const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365 || isCredit);
-      const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : formatNumber(client.annualizedTurnover, 1));
-      const dsoText = isCredit ? '0 يوم (دائن)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`);
+      const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || isCredit);
+      const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : formatNumber(client.arTurnover !== undefined ? client.arTurnover : client.annualizedTurnover, 2));
+      const dsoText = isCredit ? '0 يوم (دائن)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 1)} يوم`);
 
       let classColor = 'var(--accent-success)';
       if (client.classification === 'average') classColor = 'var(--accent-warning)';
@@ -410,9 +410,9 @@ const Renderer = {
     const recommendations = generateRecommendation(client);
     const aging = client.agingBuckets || {};
     const isCredit = client.isCredit;
-    const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || client.dso < 1 || client.annualizedTurnover >= 365 || isCredit);
-    const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : `${formatNumber(client.annualizedTurnover, 1)} مرة`);
-    const dsoText = isCredit ? '0 يوم (دائن / دفعة مقدمة)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 0)} يوم`);
+    const isCash = (!client.avgReceivables || client.avgReceivables === 0 || client.dso === 0 || isCredit);
+    const turnoverText = isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : `${formatNumber(client.arTurnover !== undefined ? client.arTurnover : client.annualizedTurnover, 2)} مرة`);
+    const dsoText = isCredit ? '0 يوم (دائن / دفعة مقدمة)' : (isCash ? '0 يوم (سداد فوري)' : `${formatNumber(client.dso, 1)} يوم`);
     const priceVal = (client.suggestedPrice && client.suggestedPrice > 0) ? client.suggestedPrice : (client.cashPrice || 0);
 
     let classColor = 'var(--accent-success)';
@@ -445,7 +445,7 @@ const Renderer = {
           <span class="detail-value">${formatNumber(client.avgReceivables)} جنيه</span>
         </div>
         <div class="client-detail-item">
-          <span class="detail-label">معدل الدوران السنوي</span>
+          <span class="detail-label">معدل الدوران (عن الفترة)</span>
           <span class="detail-value" style="${isCash ? 'color: var(--accent-success); font-weight: var(--weight-bold);' : ''}">${turnoverText}</span>
         </div>
         <div class="client-detail-item">

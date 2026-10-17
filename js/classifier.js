@@ -8,14 +8,14 @@
  */
 const DEFAULT_THRESHOLDS = {
   good: {
-    maxDSO: 30,        // ≤ 30 يوم تحصيل — فئة A ممتاز
-    minTurnover: 12    // ≥ 12 مرة دوران سنوي
+    maxDSO: 30,        // ≤ 30 يوم تحصيل — فئة A ممتاز (جيد)
+    minTurnover: 8
   },
   average: {
-    maxDSO: 60,        // 31-60 يوم تحصيل — فئة B عادي
-    minTurnover: 6     // 6-12 مرة دوران سنوي
+    maxDSO: 90,        // 31-90 يوم تحصيل — فئة B عادي (متوسط)
+    minTurnover: 3
   }
-  // poor: > 60 يوم أو < 6 دوران — فئة C بطيء/متعثر
+  // poor: > 90 يوم تحصيل — فئة C بطيء (سئ)
 };
 
 /**
@@ -101,42 +101,23 @@ function classifyClients(results, thresholds = null, riskPremiums = null) {
  */
 function classifyClient(result, thresholds = DEFAULT_THRESHOLDS) {
   const dso = result.dso || 0;
-  const isCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || dso < 1 || result.annualizedTurnover >= 365 || result.isCredit);
+  const isInstantCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || result.isCredit);
 
   // عميل السداد النقدي الفوري والعميل الدائن دائماً في الفئة الممتازة
-  if (isCash) return 'good';
+  if (isInstantCash) return 'good';
 
-  const aging = result.agingBuckets || {};
-  const totalDebt = result.closingBalance > 0 ? result.closingBalance : (aging.total || 0);
+  const maxGood = thresholds?.good?.maxDSO !== undefined ? thresholds.good.maxDSO : 30;
+  const maxAvg = thresholds?.average?.maxDSO !== undefined ? thresholds.average.maxDSO : 90;
 
-  // حالة العميل الذي سدد كامل رصيده الختامي لكن كان له تاريخ ائتماني خلال الفترة
-  if (totalDebt <= 0) {
-    if (dso <= (thresholds?.good?.maxDSO || 30)) return 'good';
-    if (dso <= (thresholds?.average?.maxDSO || 60)) return 'average';
-    return 'poor';
-  }
-
-  // نسب شرائح أعمار الديون من إجمالي الرصيد القائم
-  const over90Ratio = (aging.over90 || 0) / totalDebt;
-  const lateRatio = ((aging.days90 || 0) + (aging.over90 || 0)) / totalDebt;
-  const currentRatio = (aging.current || 0) / totalDebt;
-
-  // 1. فئة (C - بطيء / عالي المخاطر):
-  // ديون راكدة تجاوزت 90 يوماً بنسبة ≥ 20%، أو ديون متأخرة > 60 يوماً بنسبة ≥ 50%، أو متوسط أيام التحصيل تجاوز 90 يوماً
-  if (over90Ratio >= 0.20 || lateRatio >= 0.50 || dso > 90) {
-    return 'poor';
-  }
-
-  // 2. فئة (A - ممتاز / منخفض المخاطر):
-  // الديون الجارية (0-30 يوماً) تمثل 70% فأكثر، مع انعدام الديون المتأخرة (>90 يوم < 5%)، وسرعة سداد عالية
-  const goodDsoLimit = Math.max(45, (thresholds?.good?.maxDSO || 30));
-  if (currentRatio >= 0.70 && over90Ratio < 0.05 && dso <= goodDsoLimit) {
+  // فحص شريحة الأيام وفق معادلة الشيت الصريحة:
+  // <= 30: جيد | <= 90: متوسط | > 90: سئ
+  if (dso <= maxGood) {
     return 'good';
+  } else if (dso <= maxAvg) {
+    return 'average';
+  } else {
+    return 'poor';
   }
-
-  // 3. فئة (B - عادي / متوسط المخاطر):
-  // باقي الحالات المعتدلة التي تتركز في (31 - 60 يوماً) ولا تتجاوز الحدود الخطرة
-  return 'average';
 }
 
 /**

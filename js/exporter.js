@@ -23,7 +23,7 @@ const Exporter = {
         'رصيد أول المدة': c.openingBalance,
         'رصيد آخر المدة': c.closingBalance,
         'متوسط المدينين': c.avgReceivables,
-        'معدل الدوران السنوي': isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : c.annualizedTurnover),
+        'معدل الدوران': isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : (c.arTurnover !== undefined ? c.arTurnover : c.annualizedTurnover)),
         'أيام التحصيل (DSO)': isCredit ? '0 (دائن)' : (isCash ? '0 (سداد فوري)' : c.dso),
         'نسبة الزيادة المقترحة %': isCash ? 0 : (c.totalMarkupPct || 0),
         'السعر المقترح للوحدة (جنيه)': (c.suggestedPrice && c.suggestedPrice > 0) ? c.suggestedPrice : (c.cashPrice || 0),

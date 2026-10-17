@@ -132,37 +132,44 @@ function calculateClientMetrics(clientName, records, settings) {
   const totalPayments = timeline.totalPayments;
   const closingBalance = timeline.closingBalance;
   const isCreditClient = timeline.isCreditClient;
-  const dso = timeline.dso;
   const actualCollectionDays = timeline.actualCollectionDays;
   const collectionRate = timeline.collectionRate;
   const agingBuckets = timeline.agingBuckets;
 
-  // متوسط المدينين اليومي المرجح بالزمن (Time-Weighted Daily Average Balance)
-  const avgReceivables = isCreditClient ? 0 : calculateDailyAverageReceivables(
-    timeline.chronologicalEvents,
-    Math.max(0, openingBalance),
-    startDate || timeline.clientFirstDate,
-    endDate || timeline.clientLastDate,
-    periodDays
-  );
-
-  // معدل دوران المدينين
-  let arTurnover = 365;
-  let annualizedTurnover = 365;
-
-  if (isCreditClient || (closingBalance <= 0 && dso === 0)) {
-    arTurnover = 365;
-    annualizedTurnover = 365;
-  } else if (dso > 0) {
-    arTurnover = roundTo(periodDays / dso, 2);
-    annualizedTurnover = roundTo(365 / dso, 1);
-  } else if (totalSales > 0 && avgReceivables > 0) {
-    arTurnover = roundTo(totalSales / avgReceivables, 2);
-    annualizedTurnover = roundTo(arTurnover * (365 / periodDays), 1);
-  } else {
-    arTurnover = 365;
-    annualizedTurnover = 365;
+  // 1. بيان الأيام الخاص بالعميل (من تاريخ أول حركة حتى تاريخ نهاية الفترة) دون توحيد الفترة
+  let clientPeriodDays = periodDays;
+  const clientFirstDate = timeline.clientFirstDate || startDate;
+  const asOfDate = endDate || settings.globalEndDate || timeline.clientLastDate;
+  if (clientFirstDate && asOfDate) {
+    const tenureDiff = (asOfDate.getTime() - clientFirstDate.getTime()) / (1000 * 60 * 60 * 24);
+    if (tenureDiff > 0) {
+      clientPeriodDays = roundTo(tenureDiff, 2);
+    }
   }
+  clientPeriodDays = Math.max(1, clientPeriodDays);
+
+  // 2. متوسط رصيد العميل وفق معادلة الشيت الدقيقة: (أول المدة + آخر المدة) / 2
+  let avgReceivables = 0;
+  if (!isCreditClient && (openingBalance > 0 || closingBalance > 0)) {
+    avgReceivables = roundTo((Math.max(0, openingBalance) + Math.max(0, closingBalance)) / 2, 2);
+  }
+
+  // 3. دوران العميل عن فترة تعامله الخاصة فقط (بدون تحويل سنوي 365)
+  let arTurnover = 0;
+  if (totalSales > 0 && avgReceivables > 0) {
+    arTurnover = roundTo(totalSales / avgReceivables, 2);
+  }
+
+  // 4. معدل دوران العميل بالأيام (DSO) = بيان الأيام الخاصة بالعميل ÷ دوران العميل
+  let dso = 0;
+  if (isCreditClient || (closingBalance <= 0 && openingBalance <= 0)) {
+    dso = 0;
+  } else if (arTurnover > 0) {
+    dso = roundTo(clientPeriodDays / arTurnover, 2);
+  } else if (closingBalance > 0) {
+    dso = roundTo(clientPeriodDays, 1);
+  }
+  const annualizedTurnover = arTurnover; // للتوافق بدون مضاعفة دبلجة
 
   // ═══════════════════════════════════════════════
   // القسم الثاني: الجدوى وتكلفة الفرصة البديلة
@@ -263,10 +270,11 @@ function calculateClientMetrics(clientName, records, settings) {
     currentMargin: roundTo(profitMargin, 2),
     feasibilityGap: roundTo(feasibilityGap, 2),
 
-    // بيانات الفترة
-    periodDays,
-    startDate,
-    endDate,
+    // بيانات الفترة الخاصة بالعميل
+    periodDays: clientPeriodDays,
+    clientPeriodDays,
+    startDate: clientFirstDate || startDate,
+    endDate: asOfDate || endDate,
     transactionCount: records.length
   };
 }
@@ -835,8 +843,8 @@ function calculateSummary(results, settings) {
   const periodDays = results.length > 0 ? results[0].periodDays : 365;
   const periodTurnover = totalReceivables > 0 ? totalSales / totalReceivables : 0;
   const avgDSO = periodTurnover > 0 ? periodDays / periodTurnover : 0;
-  // معدل الدوران السنوي الإجمالي الحقيقي (معادل لـ 365 يوم) ليتطابق رياضياً مع أيام التحصيل:
-  const avgTurnover = avgDSO > 0 ? (365 / avgDSO) : (periodTurnover > 0 ? periodTurnover * (365 / periodDays) : 0);
+  // معدل دوران المحفظة الإجمالي عن الفترة:
+  const avgTurnover = periodTurnover > 0 ? roundTo(periodTurnover, 2) : 0;
   
   const avgRequiredMarkup = results.reduce((s, r) => s + r.requiredMarkup, 0) / totalClients;
   
