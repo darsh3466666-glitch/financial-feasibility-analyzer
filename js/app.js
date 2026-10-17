@@ -382,7 +382,10 @@ const App = {
       window._lastSalesByClass = salesByClass;
 
       // الملخص الشامل
-      const summary = calculateSummary(results, settings);
+      const summary = calculateSummary(results, {
+        ...settings,
+        totalImportedClients: parsedData.clientCount
+      });
       this.state.summary = summary;
       window._lastSummary = summary;
 

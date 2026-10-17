@@ -820,6 +820,8 @@ function calculateSummary(results, settings) {
   }
 
   const totalClients = results.length;
+  const totalImportedClients = settings?.totalImportedClients || totalClients;
+  const dormantClientsCount = Math.max(0, totalImportedClients - totalClients);
   const totalSales = results.reduce((s, r) => s + r.totalSales, 0);
   const totalReceivables = results.reduce((s, r) => s + r.avgReceivables, 0);
   
@@ -872,6 +874,8 @@ function calculateSummary(results, settings) {
 
   return {
     totalClients,
+    totalImportedClients,
+    dormantClientsCount,
     totalSales: roundTo(totalSales, 2),
     totalReceivables: roundTo(totalReceivables, 2),
     totalDebt: roundTo(totalDebt, 2),

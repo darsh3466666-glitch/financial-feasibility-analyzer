@@ -34,8 +34,13 @@ const Renderer = {
         <div class="kpi-icon">
           <svg class="icon"><use href="#users"></use></svg>
         </div>
-        <span class="kpi-label">إجمالي العملاء</span>
+        <span class="kpi-label">${summary.dormantClientsCount > 0 ? 'العملاء النشطين خلال الفترة' : 'إجمالي العملاء'}</span>
         <span class="kpi-value">${formatNumber(totalClients)}</span>
+        ${summary.dormantClientsCount > 0 ? `
+          <div style="font-size: 0.73rem; color: var(--text-secondary); margin-top: 2px;">
+            من أصل ${formatNumber(summary.totalImportedClients)} عميل بالـ ERP (${formatNumber(summary.dormantClientsCount)} خامل بدون حركة)
+          </div>
+        ` : ''}
         <div style="margin-top: 8px; width: 100%; border-top: 1px solid var(--border-default); padding-top: 6px; font-size: 0.75rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <span style="color: var(--accent-success); font-weight: 600;">مُجدي: ${formatNumber(summary.feasibleCount)} (${formatPercent(feasiblePct)})</span>
