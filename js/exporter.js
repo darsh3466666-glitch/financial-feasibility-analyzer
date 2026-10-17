@@ -25,9 +25,11 @@ const Exporter = {
         'متوسط المدينين': c.avgReceivables,
         'معدل الدوران': isCredit ? 'نقدي (دائن)' : (isCash ? 'نقدي ∞' : (c.arTurnover !== undefined ? c.arTurnover : c.annualizedTurnover)),
         'أيام التحصيل (DSO)': isCredit ? '0 (دائن)' : (isCash ? '0 (سداد فوري)' : c.dso),
+        'معدل التحصيل %': c.collectionRate,
+        'نسبة من المبيعات %': c.salesPercentage ? roundTo(c.salesPercentage, 2) : 0,
+        'نسبه من المديونية %': c.debtPercentage ? roundTo(c.debtPercentage, 2) : 0,
         'نسبة الزيادة المقترحة %': isCash ? 0 : (c.totalMarkupPct || 0),
         'السعر المقترح للوحدة (جنيه)': (c.suggestedPrice && c.suggestedPrice > 0) ? c.suggestedPrice : (c.cashPrice || 0),
-        'معدل التحصيل %': c.collectionRate,
         'عدد الفواتير': c.transactionCount,
         'فترة التحليل (أيام)': c.periodDays
       };

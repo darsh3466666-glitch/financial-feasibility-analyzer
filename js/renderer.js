@@ -340,6 +340,14 @@ const Renderer = {
           if (!a.avgReceivables || a.avgReceivables === 0 || a.dso === 0 || a.isCredit) valA = Infinity;
           if (!b.avgReceivables || b.avgReceivables === 0 || b.dso === 0 || b.isCredit) valB = Infinity;
         }
+        if (sortConfig.key === 'salesPercentage') {
+          valA = a.salesPercentage || 0;
+          valB = b.salesPercentage || 0;
+        }
+        if (sortConfig.key === 'debtPercentage') {
+          valA = a.debtPercentage || 0;
+          valB = b.debtPercentage || 0;
+        }
         if (sortConfig.key === 'isFeasible') {
           valA = a.isFeasible ? 1 : 0;
           valB = b.isFeasible ? 1 : 0;
@@ -402,6 +410,8 @@ const Renderer = {
         <td class="num-cell" style="${isCash ? 'color: var(--accent-success); font-weight: var(--weight-bold);' : ''}">${turnoverText}</td>
         <td class="num-cell" style="${isCash ? 'color: var(--accent-success);' : ''}">${dsoText}</td>
         <td class="num-cell" style="color: ${client.collectionRate >= 80 ? 'var(--accent-success)' : client.collectionRate >= 50 ? 'var(--accent-warning)' : 'var(--accent-danger)'}; font-weight: 600;">${formatPercent(client.collectionRate)}</td>
+        <td class="num-cell" style="color: var(--accent-primary); font-weight: 600;">${formatPercent(client.salesPercentage, 2)}</td>
+        <td class="num-cell" style="${(client.debtPercentage || 0) > 0 ? (client.debtPercentage >= 5 ? 'color: var(--accent-danger); font-weight: 700;' : 'font-weight: 600;') : 'color: var(--text-secondary); opacity: 0.5;'}">${formatPercent(client.debtPercentage, 2)}</td>
         <td>
           <span class="badge badge-${client.classification}">${client.classLabel}</span>
         </td>
@@ -472,6 +482,14 @@ const Renderer = {
         <div class="client-detail-item">
           <span class="detail-label">معدل التحصيل</span>
           <span class="detail-value">${formatPercent(client.collectionRate)}</span>
+        </div>
+        <div class="client-detail-item">
+          <span class="detail-label">نسبة من المبيعات</span>
+          <span class="detail-value" style="color: var(--accent-primary); font-weight: 600;">${formatPercent(client.salesPercentage, 2)}</span>
+        </div>
+        <div class="client-detail-item">
+          <span class="detail-label">نسبه من المديونية</span>
+          <span class="detail-value" style="${(client.debtPercentage || 0) >= 5 ? 'color: var(--accent-danger); font-weight: 700;' : 'font-weight: 600;'}">${formatPercent(client.debtPercentage, 2)}</span>
         </div>
         <div class="client-detail-item">
           <span class="detail-label">التصنيف</span>

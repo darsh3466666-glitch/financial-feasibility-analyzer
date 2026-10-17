@@ -397,8 +397,15 @@ const App = {
       });
       this.state.pricingReport = pricingReport;
 
-      // ربط بيانات التسعير الفردية الخاصة بكل عميل في بياناته مباشرة
+      // حساب إجمالي مبيعات وإجمالي مديونيات المحفظة لحساب النسب الفردية
+      const totalPortfolioSales = summary.totalSales || classifiedClients.reduce((s, c) => s + (c.totalSales || 0), 0);
+      const totalPortfolioDebt = (summary.grossReceivables || classifiedClients.filter(c => (c.closingBalance || 0) > 0).reduce((s, c) => s + c.closingBalance, 0)) || 1;
+
+      // ربط بيانات التسعير والنسب الفردية الخاصة بكل عميل في بياناته مباشرة
       classifiedClients.forEach((client, idx) => {
+        client.salesPercentage = totalPortfolioSales > 0 ? ((client.totalSales || 0) / totalPortfolioSales) * 100 : 0;
+        client.debtPercentage = totalPortfolioDebt > 0 && (client.closingBalance || 0) > 0 ? ((client.closingBalance || 0) / totalPortfolioDebt) * 100 : 0;
+
         const p = pricingReport[idx];
         if (p) {
           client.suggestedPrice = p.suggestedPrice;
