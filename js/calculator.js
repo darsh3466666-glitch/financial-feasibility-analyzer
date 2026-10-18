@@ -148,28 +148,39 @@ function calculateClientMetrics(clientName, records, settings) {
   }
   clientPeriodDays = Math.max(1, clientPeriodDays);
 
-  // 2. متوسط رصيد العميل وفق معادلة الشيت الدقيقة: (أول المدة + آخر المدة) / 2
-  let avgReceivables = 0;
-  if (!isCreditClient && (openingBalance > 0 || closingBalance > 0)) {
-    avgReceivables = roundTo((Math.max(0, openingBalance) + Math.max(0, closingBalance)) / 2, 2);
-  }
-
-  // 3. دوران العميل عن فترة تعامله الخاصة فقط (بدون تحويل سنوي 365)
-  let arTurnover = 0;
-  if (totalSales > 0 && avgReceivables > 0) {
-    arTurnover = roundTo(totalSales / avgReceivables, 2);
-  }
-
-  // 4. معدل دوران العميل بالأيام (DSO) = بيان الأيام الخاصة بالعميل ÷ دوران العميل
+  // 2. أيام التحصيل المتزامنة الواقعية (DSO) من واقع الفواتير والسدادات الفعلية (FIFO):
   let dso = 0;
-  if (isCreditClient || (closingBalance <= 0 && openingBalance <= 0)) {
-    dso = 0;
-  } else if (arTurnover > 0) {
-    dso = roundTo(clientPeriodDays / arTurnover, 2);
-  } else if (closingBalance > 0) {
-    dso = roundTo(clientPeriodDays, 1);
+  if (isCreditClient || (closingBalance <= 0 && actualCollectionDays <= 0.5 && openingBalance <= 0)) {
+    dso = 0; // سداد فوري كاش أو رصيد دائن
+  } else if (closingBalance <= 0) {
+    // عميل مصفّي حسابه بالكامل: سرعة تحصيله هي أيامه الفعلية المسددة
+    dso = roundTo(actualCollectionDays, 1);
+  } else if (actualCollectionDays > 0) {
+    // عميل سدد جزءاً وعليه رصيد: لا تقل أيامه عن سرعة تحصيل المبالغ المسددة، وتأخذ بالاعتبار أعمار المفتوح
+    dso = roundTo(Math.max(timeline.dso || 0, actualCollectionDays), 1);
+  } else {
+    // عميل لم يسدد أي مبالغ حتى الآن وعليه رصيد مفتوح
+    dso = roundTo(timeline.dso || clientPeriodDays, 1);
   }
-  const annualizedTurnover = arTurnover; // للتوافق بدون مضاعفة دبلجة
+
+  // 3. معدل دوران العميل الواقعي عن فترة تعامله الخاصة:
+  let arTurnover = 0;
+  if (dso === 0) {
+    arTurnover = clientPeriodDays; // سداد كاش فوري
+  } else if (dso > 0) {
+    arTurnover = roundTo(clientPeriodDays / dso, 2);
+  }
+
+  // معدل الدوران السنوي المكافئ (365 يوم):
+  const annualizedTurnover = dso > 0 ? roundTo(365 / dso, 2) : 365;
+
+  // 4. متوسط رصيد المدينين الواقعي المتسق محاسبياً مع معدل الدوران:
+  let avgReceivables = 0;
+  if (dso > 0 && arTurnover > 0 && totalSales > 0) {
+    avgReceivables = roundTo(totalSales / arTurnover, 2);
+  } else if (closingBalance > 0) {
+    avgReceivables = roundTo(closingBalance, 2);
+  }
 
   // ═══════════════════════════════════════════════
   // القسم الثاني: الجدوى وتكلفة الفرصة البديلة
@@ -182,7 +193,7 @@ function calculateClientMetrics(clientName, records, settings) {
   const hurdleRate = depositRate + riskPremiumMgmt;
 
   // الخسارة الخفية وتكلفة التمويل
-  const isSettledOrCash = isCreditClient || closingBalance <= 0 || avgReceivables === 0 || dso === 0 || dso < 1;
+  const isSettledOrCash = isCreditClient || (closingBalance <= 0 && dso <= 0.5) || avgReceivables === 0 || dso === 0 || dso < 1;
   const hiddenLossPct = isSettledOrCash ? 0 : ((dso / 365) * depositRate);
   const opportunityCost = isSettledOrCash ? 0 : (avgReceivables * (depositRate / 100) * (periodDays / 365));
   const financingCost = isSettledOrCash ? 0 : (avgReceivables * (lendingRate / 100) * (periodDays / 365));
@@ -198,7 +209,7 @@ function calculateClientMetrics(clientName, records, settings) {
   const qualityScore = (isCreditClient || isSettledOrCash) ? 100 : (scoreCollection + scoreDSO + scoreTurnover);
 
   // تقييم الجدوى الاقتصادية
-  const isInstantCash = isCreditClient || isSettledOrCash || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365);
+  const isInstantCash = isCreditClient || (closingBalance <= 0 && dso <= 0.5) || (!avgReceivables || avgReceivables === 0 || dso === 0 || dso < 1 || annualizedTurnover >= 365);
   let isFeasible = false;
   if (isInstantCash) {
     isFeasible = true;

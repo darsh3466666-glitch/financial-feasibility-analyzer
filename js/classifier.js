@@ -101,7 +101,7 @@ function classifyClients(results, thresholds = null, riskPremiums = null) {
  */
 function classifyClient(result, thresholds = DEFAULT_THRESHOLDS) {
   const dso = result.dso || 0;
-  const isInstantCash = (!result.avgReceivables || result.avgReceivables === 0 || dso === 0 || result.isCredit);
+  const isInstantCash = (result.isCredit || (dso === 0 && (!result.closingBalance || result.closingBalance <= 0)));
 
   // عميل السداد النقدي الفوري والعميل الدائن دائماً في الفئة الممتازة
   if (isInstantCash) return 'good';
@@ -109,8 +109,10 @@ function classifyClient(result, thresholds = DEFAULT_THRESHOLDS) {
   const maxGood = thresholds?.good?.maxDSO !== undefined ? thresholds.good.maxDSO : 30;
   const maxAvg = thresholds?.average?.maxDSO !== undefined ? thresholds.average.maxDSO : 90;
 
-  // فحص شريحة الأيام وفق معادلة الشيت الصريحة:
-  // <= 30: جيد | <= 90: متوسط | > 90: سئ
+  // فحص شريحة الأيام الواقعية:
+  // <= 30 يوم: ممتاز (A)
+  // 31 - 90 يوم: عادي (B)
+  // > 90 يوم: بطيء (C)
   if (dso <= maxGood) {
     return 'good';
   } else if (dso <= maxAvg) {
