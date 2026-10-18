@@ -406,15 +406,14 @@ const Renderer = {
         </td>
         <td class="num-cell">${formatNumber(client.totalSales)}</td>
         <td class="num-cell">${closingHtml}</td>
-        <td class="num-cell">${formatNumber(client.avgReceivables)}</td>
+        <td>
+          <span class="badge badge-${client.classification}">${client.classLabel}</span>
+        </td>
         <td class="num-cell" style="${isCash ? 'color: var(--accent-success); font-weight: var(--weight-bold);' : ''}">${turnoverText}</td>
         <td class="num-cell" style="${isCash ? 'color: var(--accent-success);' : ''}">${dsoText}</td>
         <td class="num-cell" style="color: ${client.collectionRate >= 80 ? 'var(--accent-success)' : client.collectionRate >= 50 ? 'var(--accent-warning)' : 'var(--accent-danger)'}; font-weight: 600;">${formatPercent(client.collectionRate)}</td>
         <td class="num-cell" style="color: var(--accent-primary); font-weight: 600;">${formatPercent(client.salesPercentage, 2)}</td>
         <td class="num-cell" style="${(client.debtPercentage || 0) > 0 ? (client.debtPercentage >= 5 ? 'color: var(--accent-danger); font-weight: 700;' : 'font-weight: 600;') : 'color: var(--text-secondary); opacity: 0.5;'}">${formatPercent(client.debtPercentage, 2)}</td>
-        <td>
-          <span class="badge badge-${client.classification}">${client.classLabel}</span>
-        </td>
         <td>
           <span class="badge ${client.isFeasible ? 'badge-feasible' : 'badge-not-feasible'}">
             ${client.isFeasible ? 'مُجدي' : 'غير مُجدي'}
