@@ -1091,6 +1091,8 @@
 
   /* إخفاء كل العناصر غير المطلوبة والتركيز على القسمين فقط */
   .app-header,
+  #settings-section,
+  .settings-panel,
   #upload-section,
   #mapping-section,
   #kpi-section,
