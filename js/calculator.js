@@ -247,6 +247,7 @@ function calculateClientMetrics(clientName, records, settings) {
     unappliedPayments: timeline.unappliedPayments,
     overdueAmount: timeline.overdueAmount,
     oldestOpenInvoiceDays: timeline.oldestOpenInvoiceDays,
+    maxDelayDays: timeline.maxDelayDays || 0,
     clientTenureDays: timeline.clientTenureDays,
     dataCoverage: timeline.dataCoverage,
     creditExposure: timeline.creditExposure,
@@ -636,6 +637,10 @@ function reconcileClientTimeline(records, openingBalance, periodSettings) {
     actualCollectionDays = roundTo(weightedSum / totalMatchedPaid, 1);
   }
 
+  // أقصى فترة تأخير سداد (عمر أقدم مديونية مسددة أو متبقية)
+  const maxSettledDays = settlements.length > 0 ? Math.max(...settlements.map(s => Math.round(s.daysToPay || 0))) : 0;
+  const maxDelayDays = Math.max(maxSettledDays, oldestOpenInvoiceDays || 0);
+
   // احتساب DSO المعتمد:
   let dso = 0;
   if (isCreditClient) {
@@ -701,6 +706,7 @@ function reconcileClientTimeline(records, openingBalance, periodSettings) {
     agingBuckets,
     overdueAmount: roundTo(overdueAmount, 2),
     oldestOpenInvoiceDays,
+    maxDelayDays,
     clientTenureDays,
     dataCoverage,
     creditExposure: Math.max(0, closingBalance),

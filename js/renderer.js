@@ -526,6 +526,12 @@ const Renderer = {
           <span class="detail-label">أقصى سحب لحظي (Peak)</span>
           <span class="detail-value" style="font-weight: 600;">${formatNumber(client.peakExposure || 0)} جنيه</span>
         </div>
+        <div class="client-detail-item">
+          <span class="detail-label">عمر أقدم مديونية (أقصى تأخير)</span>
+          <span class="detail-value" style="color: ${(client.maxDelayDays || 0) > 90 ? 'var(--accent-danger)' : 'var(--text-primary)'}; font-weight: 700;">
+            ${formatNumber(client.maxDelayDays || 0)} يوم ${((client.maxDelayDays || 0) > 0) ? `(${roundTo((client.maxDelayDays || 0) / 30.4, 1)} شهر)` : ''}
+          </span>
+        </div>
       </div>
 
       <h4 style="margin-top: var(--space-4); margin-bottom: var(--space-3); font-size: var(--text-base);">التوصيات</h4>
@@ -541,8 +547,9 @@ const Renderer = {
               <span>📋 خريطة كشف الحساب المتزامن (التسلسل الزمني للفواتير والسدادات)</span>
               <span class="badge badge-good" style="font-size:0.75rem;">${client.statementLedger.length} حركة</span>
             </h4>
-            <div style="font-size: var(--text-xs); color: var(--text-secondary);">
-              أعلى سقف مديونية: <strong style="color:var(--text-primary); font-size: var(--text-sm);">${formatNumber(client.peakExposure || 0)} جنيه</strong>
+            <div style="font-size: var(--text-xs); color: var(--text-secondary); display:flex; gap:12px; flex-wrap:wrap;">
+              <span>أعلى سقف مديونية: <strong style="color:var(--text-primary); font-size: var(--text-sm);">${formatNumber(client.peakExposure || 0)} جنيه</strong></span>
+              <span>أقصى فترة تأخير: <strong style="color:var(--accent-danger); font-size: var(--text-sm);">${formatNumber(client.maxDelayDays || 0)} يوم (${roundTo((client.maxDelayDays || 0) / 30.4, 1)} شهر)</strong></span>
             </div>
           </div>
 
