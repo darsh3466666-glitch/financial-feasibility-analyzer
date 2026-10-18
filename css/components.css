@@ -1078,23 +1078,294 @@
 .animate-in:nth-child(7) { animation-delay: 480ms; }
 .animate-in:nth-child(8) { animation-delay: 560ms; }
 
-/* ── Print Styles ── */
+/* ── Print Styles — طباعة تنفيذية احترافية للقسمين ── */
+.print-only {
+  display: none !important;
+}
+
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm 6mm 10mm 6mm;
+  }
+
+  /* إخفاء كل العناصر غير المطلوبة والتركيز على القسمين فقط */
+  .app-header,
+  #upload-section,
+  #mapping-section,
+  #kpi-section,
+  #feasibility-section,
+  #aging-section,
+  #pricing-section,
+  #charts-section,
+  #export-section,
+  .app-footer,
+  .table-controls,
+  .modal-backdrop,
+  .toast-container,
+  .header-actions,
+  #results-count,
+  .file-chips,
+  button {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-family: 'Alexandria', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 10px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .app {
+    min-height: auto !important;
+    display: block !important;
+  }
+
+  .app-main {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  #results-area {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* ترويسة التقرير المطبوع */
+  .print-only {
+    display: block !important;
+  }
+
+  .print-header-box {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 8px 14px !important;
+    margin-bottom: 12px !important;
+    background: #f8fafc !important;
+    border: 1.5px solid #0f3b73 !important;
+    border-radius: 6px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-company-name {
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    color: #0f3b73 !important;
+    margin: 0 0 4px 0 !important;
+  }
+
+  .print-subtitle {
+    font-size: 10.5px !important;
+    color: #475569 !important;
+    margin: 0 !important;
+  }
+
+  .print-header-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    text-align: left !important;
+    font-size: 9.5px !important;
+    color: #1e293b !important;
+  }
+
+  .print-info-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 6px !important;
+  }
+
+  .print-info-label {
+    font-weight: 700 !important;
+    color: #0f3b73 !important;
+  }
+
+  .print-filter-tag {
+    background-color: #0f3b73 !important;
+    color: #ffffff !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    font-weight: 700 !important;
+    font-size: 9.5px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* إظهار وتنسيق القسمين المطلوبين */
+  #sales-analysis-section,
+  #table-section {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 14px 0 !important;
+    padding: 0 !important;
+    page-break-inside: auto !important;
+  }
+
+  .section-header {
+    margin-bottom: 6px !important;
+    padding-bottom: 4px !important;
+    border-bottom: 1.5px solid #0f3b73 !important;
+  }
+
+  .section-title {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #0f3b73 !important;
+    margin: 0 !important;
+  }
+
+  .section-title svg {
+    display: none !important;
+  }
+
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    margin: 0 0 10px 0 !important;
+    padding: 4px !important;
+    background: #ffffff !important;
+  }
+
+  /* فك الـ Scrollbar لطباعة كل العملاء بالكامل */
   .data-table-wrapper {
     max-height: none !important;
     overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
-  
-  .table-controls {
+
+  .data-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8.8px !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+    table-layout: auto !important;
+  }
+
+  /* تكرار رأس الجدول في كل صفحة مطبوعة */
+  .data-table thead {
+    display: table-header-group !important;
+  }
+
+  .data-table thead th {
+    background-color: #f1f5f9 !important;
+    color: #0f3b73 !important;
+    font-weight: 700 !important;
+    border: 1px solid #94a3b8 !important;
+    border-bottom: 2px solid #0f3b73 !important;
+    padding: 4px 3px !important;
+    font-size: 8.5px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .data-table thead th .sort-indicator {
     display: none !important;
   }
-  
-  body {
-    background: white;
+
+  /* منع تقطيع الصف في منتصف الصفحة */
+  .data-table tbody tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    border-bottom: 1px solid #cbd5e1 !important;
   }
-  
-  .section, .card {
-    box-shadow: none !important;
-    border: none !important;
+
+  .data-table tbody tr:nth-child(even) {
+    background-color: #f8fafc !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .data-table tbody td {
+    padding: 3px 3px !important;
+    border: 1px solid #e2e8f0 !important;
+    font-size: 8.5px !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+  }
+
+  .data-table tbody td.client-name {
+    text-align: right !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    max-width: 170px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .data-table tbody td.num-cell {
+    font-family: 'Plus Jakarta Sans', monospace !important;
+    font-size: 8.5px !important;
+  }
+
+  /* شارات التصنيف والجدوى في الطباعة */
+  .badge {
+    padding: 1px 4px !important;
+    font-size: 7.5px !important;
+    font-weight: 700 !important;
+    border-radius: 3px !important;
+    display: inline-block !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .badge-good {
+    background-color: #ecfdf5 !important;
+    color: #065f46 !important;
+    border: 1px solid #a7f3d0 !important;
+  }
+
+  .badge-average {
+    background-color: #fffbeb !important;
+    color: #92400e !important;
+    border: 1px solid #fde68a !important;
+  }
+
+  .badge-poor {
+    background-color: #fef2f2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fecaca !important;
+  }
+
+  .badge-feasible {
+    background-color: #ecfdf5 !important;
+    color: #065f46 !important;
+    border: 1px solid #a7f3d0 !important;
+  }
+
+  .badge-not-feasible {
+    background-color: #fef2f2 !important;
+    color: #991b1b !important;
+    border: 1px solid #fecaca !important;
+  }
+
+  /* تذييل التقرير المطبوع */
+  .print-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-top: 14px !important;
+    padding-top: 6px !important;
+    border-top: 1px solid #cbd5e1 !important;
+    font-size: 8.5px !important;
+    color: #64748b !important;
   }
 }

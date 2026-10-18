@@ -168,6 +168,11 @@ const App = {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.closeModal();
     });
+
+    // مراقبة أحداث الطباعة لتجهيز التقرير
+    window.addEventListener('beforeprint', () => {
+      this.preparePrintReport();
+    });
   },
 
   /**
@@ -566,6 +571,71 @@ const App = {
       this.state.pricingSummary,
       this.readSettings()
     );
+  },
+
+  /**
+   * إعداد ترويسة وبيانات التقرير قبل الطباعة
+   */
+  preparePrintReport() {
+    const activeFilterBtn = document.querySelector('.table-filters .filter-btn.active');
+    let filterLabel = 'جميع العملاء (الكل)';
+    if (activeFilterBtn) {
+      const filterType = activeFilterBtn.dataset.filter;
+      if (filterType === 'with-balance') {
+        const count = document.getElementById('with-balance-count')?.textContent || '';
+        filterLabel = `العملاء الذين عليهم رصيد فقط (${count} عميل)`;
+      } else if (filterType === 'good') {
+        filterLabel = 'العملاء فئة (A ممتاز)';
+      } else if (filterType === 'average') {
+        filterLabel = 'العملاء فئة (B عادي)';
+      } else if (filterType === 'poor') {
+        filterLabel = 'العملاء فئة (C بطيء)';
+      } else if (filterType === 'feasible') {
+        filterLabel = 'العملاء المجديين اقتصادياً';
+      } else if (filterType === 'not-feasible') {
+        filterLabel = 'العملاء غير المجديين';
+      } else {
+        filterLabel = 'جميع العملاء (الكل)';
+      }
+    }
+
+    const searchTerm = this.state.searchTerm ? ` — [بحث: "${this.state.searchTerm}"]` : '';
+    const visibleCount = document.querySelectorAll('#clients-table-body tr').length;
+    const totalCount = this.state.classifiedClients ? this.state.classifiedClients.length : visibleCount;
+
+    const dateEl = document.getElementById('print-date');
+    if (dateEl) {
+      dateEl.textContent = new Date().toLocaleDateString('ar-EG', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    const filterEl = document.getElementById('print-filter-name');
+    if (filterEl) {
+      filterEl.textContent = `${filterLabel}${searchTerm}`;
+    }
+
+    const countEl = document.getElementById('print-records-count');
+    if (countEl) {
+      countEl.textContent = `${formatNumber(visibleCount)} عميل مطبوع (من أصل ${formatNumber(totalCount)} عميل)`;
+    }
+  },
+
+  /**
+   * تنفيذ الطباعة النظيفة للقسمين
+   */
+  printReport() {
+    if (!this.state.classifiedClients || this.state.classifiedClients.length === 0) {
+      showToast('لا توجد بيانات عملاء للطباعة', 'error');
+      return;
+    }
+    this.preparePrintReport();
+    window.print();
   }
 };
 
