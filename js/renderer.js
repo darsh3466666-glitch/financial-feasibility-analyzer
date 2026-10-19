@@ -658,6 +658,8 @@ const Renderer = {
         roleBadge = `<span class="badge badge-good" style="font-size:0.75rem;">⚡ ملف أرصدة سابقة (أول المدة)</span>`;
       } else if (sc?.isClosingSheet) {
         roleBadge = `<span class="badge badge-primary" style="font-size:0.75rem;">⚡ ملف أرصدة حالية (آخر المدة)</span>`;
+      } else if (sc?.isCombinedBalanceSheet) {
+        roleBadge = `<span class="badge badge-primary" style="font-size:0.75rem;">⚡ ملف مقارنة أرصدة (أول وآخر المدة)</span>`;
       } else if (sc?.isSalesSheet) {
         roleBadge = `<span class="badge badge-warning" style="font-size:0.75rem;">⚡ ملف فواتير ومبيعات</span>`;
       } else if (sc?.isPaymentsSheet) {

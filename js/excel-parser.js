@@ -465,6 +465,7 @@ function isColumnEligibleForField(header, fieldKey, profile, sheetContext = {}, 
 
   // 3. التاريخ
   if (fieldKey === 'date') {
+    if (sheetContext.isOpeningSheet || sheetContext.isClosingSheet || sheetContext.isCombinedBalanceSheet) return false;
     if (profile.numericRatio > 0.8 && profile.dateRatio === 0) return false;
     const isExplicitDate = getHeaderScore(header, COLUMN_PATTERNS.date.patterns, FIELD_NEGATIVE_PATTERNS.date) >= 0.5;
     return profile.dateRatio > 0.2 || isExplicitDate;
@@ -488,7 +489,7 @@ function isColumnEligibleForField(header, fieldKey, profile, sheetContext = {}, 
 
     if (fieldKey === 'openingBalance') {
       if (isCreditWord || isDebitWord) return false;
-      if (sheetContext.isClosingSheet && isGenericBalance && !isExplicitOpening) return false;
+      if (sheetContext.isClosingSheet) return false;
       if (sheetContext.isSalesSheet || sheetContext.isPaymentsSheet) return false;
       if (hasMultipleFinancialCols && !isExplicitOpening && !(sheetContext.isOpeningSheet && isGenericBalance)) {
         return false;
@@ -498,15 +499,16 @@ function isColumnEligibleForField(header, fieldKey, profile, sheetContext = {}, 
 
     if (fieldKey === 'closingBalance') {
       if (isCreditWord || isDebitWord) return false;
-      if (sheetContext.isOpeningSheet && isGenericBalance && !isExplicitClosing) return false;
+      if (sheetContext.isOpeningSheet) return false;
       if (sheetContext.isSalesSheet || sheetContext.isPaymentsSheet) return false;
-      if (hasMultipleFinancialCols && !isExplicitClosing && !isGenericBalance) {
+      if (hasMultipleFinancialCols && !isExplicitClosing && !(sheetContext.isClosingSheet && isGenericBalance)) {
         return false;
       }
       return true;
     }
 
     if (fieldKey === 'invoiceAmount') {
+      if (sheetContext.isOpeningSheet || sheetContext.isClosingSheet || sheetContext.isCombinedBalanceSheet) return false;
       if (isCreditWord) return false;
       if (isExplicitOpening || isExplicitClosing || isGenericBalance) return false;
       if (sheetContext.isPaymentsSheet && !isDebitWord) return false;
@@ -514,6 +516,7 @@ function isColumnEligibleForField(header, fieldKey, profile, sheetContext = {}, 
     }
 
     if (fieldKey === 'paymentAmount') {
+      if (sheetContext.isOpeningSheet || sheetContext.isClosingSheet || sheetContext.isCombinedBalanceSheet) return false;
       if (isDebitWord) return false;
       if (isExplicitOpening || isExplicitClosing || isGenericBalance) return false;
       if (sheetContext.isSalesSheet && !isCreditWord) return false;
@@ -534,11 +537,15 @@ function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
   const contextNameNormalized = normalizeText(fileName + ' ' + sheetName);
 
   // استنباط سياق وغرض الملف من الاسم
-  const isOpeningSheet = ['سابق', 'قديم', 'اول', 'افتتاح', 'افتتاحي', 'بداية', 'مرحل', 'opening', 'prior', 'previous', 'before', 'start']
+  const hasOpeningKeyword = ['سابق', 'قديم', 'اول', 'افتتاح', 'افتتاحي', 'بداية', 'مرحل', 'opening', 'prior', 'previous', 'before', 'start']
     .some(w => contextNameNormalized.includes(cleanArabicWord(w)) || contextNameNormalized.includes(normalizeText(w)));
 
-  const isClosingSheet = ['حالي', 'اخر', 'ختام', 'ختامي', 'نهاية', 'نهائي', 'اقفال', 'closing', 'ending', 'current', 'final', 'end']
+  const hasClosingKeyword = ['حالي', 'اخر', 'ختام', 'ختامي', 'نهاية', 'نهائي', 'اقفال', 'closing', 'ending', 'current', 'final', 'end']
     .some(w => contextNameNormalized.includes(cleanArabicWord(w)) || contextNameNormalized.includes(normalizeText(w)));
+
+  const isOpeningSheet = hasOpeningKeyword && !hasClosingKeyword;
+  const isClosingSheet = hasClosingKeyword && !hasOpeningKeyword;
+  const isCombinedBalanceSheet = hasOpeningKeyword && hasClosingKeyword;
 
   const isSalesSheet = ['فواتير', 'مبيعات', 'بيع', 'اجل', 'invoices', 'sales', 'invoice']
     .some(w => contextNameNormalized.includes(cleanArabicWord(w)) || contextNameNormalized.includes(normalizeText(w)));
@@ -549,7 +556,7 @@ function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
   const isStatementSheet = ['كشف حساب', 'استاذ', 'ميزان مراجعة', 'statement', 'ledger']
     .some(w => contextNameNormalized.includes(cleanArabicWord(w)) || contextNameNormalized.includes(normalizeText(w)));
 
-  const sheetContext = { isOpeningSheet, isClosingSheet, isSalesSheet, isPaymentsSheet, isStatementSheet };
+  const sheetContext = { isOpeningSheet, isClosingSheet, isCombinedBalanceSheet, isSalesSheet, isPaymentsSheet, isStatementSheet };
 
   // حساب عدد الأعمدة المالية المتاحة
   const numericCount = columnProfiles.filter(p => p.numericRatio >= 0.6).length;
@@ -571,28 +578,30 @@ function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
   });
   suggestedMapping.clientName = bestNameCol;
 
-  // 2. اكتشاف عمود التاريخ
+  // 2. اكتشاف عمود التاريخ (فقط للشيتات ذات الحركات كالفواتير والسدادات وكشوف الحسابات، وليس شيتات الأرصدة)
   const AUDIT_DATE_PATTERNS = ['added', 'create', 'created', 'creation', 'print', 'printed', 'system', 'export', 'اضاف', 'انشا', 'طباع'];
   let bestDateCol = null;
-  let bestDateScore = -999;
-  headers.forEach((h, i) => {
-    if (!isColumnEligibleForField(h, 'date', columnProfiles[i], sheetContext, hasMultipleFinancialCols)) return;
-    const hScore = getHeaderScore(h, COLUMN_PATTERNS.date.patterns, FIELD_NEGATIVE_PATTERNS.date);
-    let score = (hScore * 0.55) + (columnProfiles[i].dateRatio * 0.45);
-    const norm = normalizeText(h);
-    const isAudit = AUDIT_DATE_PATTERNS.some(p => norm.includes(p));
-    if (isAudit) score -= 0.6; // استبعاد أو تخفيض تواريخ الإدخال والطباعة لصالح تواريخ السداد والفواتير الفعلية
-    if (isPaymentsSheet) {
-      if (norm.includes('سداد') || norm.includes('تحصيل') || norm.includes('payment')) score += 0.4;
-      else if (norm.includes('اصدار') || norm.includes('issue')) score += 0.2;
-    } else if (isSalesSheet) {
-      if (norm.includes('فاتورة') || norm.includes('مبيعات') || norm.includes('invoice')) score += 0.4;
-    }
-    if (score > bestDateScore && score >= 0.4) {
-      bestDateScore = score;
-      bestDateCol = h;
-    }
-  });
+  if (!isOpeningSheet && !isClosingSheet && !isCombinedBalanceSheet) {
+    let bestDateScore = -999;
+    headers.forEach((h, i) => {
+      if (!isColumnEligibleForField(h, 'date', columnProfiles[i], sheetContext, hasMultipleFinancialCols)) return;
+      const hScore = getHeaderScore(h, COLUMN_PATTERNS.date.patterns, FIELD_NEGATIVE_PATTERNS.date);
+      let score = (hScore * 0.55) + (columnProfiles[i].dateRatio * 0.45);
+      const norm = normalizeText(h);
+      const isAudit = AUDIT_DATE_PATTERNS.some(p => norm.includes(p));
+      if (isAudit) score -= 0.6; // استبعاد أو تخفيض تواريخ الإدخال والطباعة لصالح تواريخ السداد والفواتير الفعلية
+      if (isPaymentsSheet) {
+        if (norm.includes('سداد') || norm.includes('تحصيل') || norm.includes('payment')) score += 0.4;
+        else if (norm.includes('اصدار') || norm.includes('issue')) score += 0.2;
+      } else if (isSalesSheet) {
+        if (norm.includes('فاتورة') || norm.includes('مبيعات') || norm.includes('invoice')) score += 0.4;
+      }
+      if (score > bestDateScore && score >= 0.4) {
+        bestDateScore = score;
+        bestDateCol = h;
+      }
+    });
+  }
   suggestedMapping.date = bestDateCol;
 
   // 3. تصنيف الأعمدة المالية الصريحة
@@ -629,13 +638,21 @@ function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
   if (isOpeningSheet) {
     suggestedMapping.openingBalance = explicitOpening || genericBalance || null;
     suggestedMapping.closingBalance = null;
-    suggestedMapping.invoiceAmount = explicitDebit || null;
-    suggestedMapping.paymentAmount = explicitCredit || null;
+    suggestedMapping.invoiceAmount = null;
+    suggestedMapping.paymentAmount = null;
+    suggestedMapping.date = null;
   } else if (isClosingSheet) {
     suggestedMapping.closingBalance = explicitClosing || genericBalance || null;
+    suggestedMapping.openingBalance = null;
+    suggestedMapping.invoiceAmount = null;
+    suggestedMapping.paymentAmount = null;
+    suggestedMapping.date = null;
+  } else if (isCombinedBalanceSheet) {
     suggestedMapping.openingBalance = explicitOpening || null;
-    suggestedMapping.invoiceAmount = explicitDebit || null;
-    suggestedMapping.paymentAmount = explicitCredit || null;
+    suggestedMapping.closingBalance = explicitClosing || genericBalance || null;
+    suggestedMapping.invoiceAmount = null;
+    suggestedMapping.paymentAmount = null;
+    suggestedMapping.date = null;
   } else if (isSalesSheet) {
     suggestedMapping.invoiceAmount = explicitDebit || genericAmount || null;
     suggestedMapping.paymentAmount = null;
@@ -680,7 +697,7 @@ function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
   const roleScores = {
     invoices: isSalesSheet ? 1 : (suggestedMapping.invoiceAmount ? 0.8 : 0),
     payments: isPaymentsSheet ? 1 : (suggestedMapping.paymentAmount ? 0.8 : 0),
-    balances: (isOpeningSheet || isClosingSheet || isStatementSheet) ? 1 : 0.5
+    balances: (isOpeningSheet || isClosingSheet || isCombinedBalanceSheet || isStatementSheet) ? 1 : 0.5
   };
 
   return {
@@ -849,7 +866,23 @@ function detectBalanceTypeColumn(sheet, mapping = {}) {
 /**
  * فحص ما إذا كان الصف أو الرصيد دائناً (له رصيد / دفعة مقدمة) أم مديناً (عليه مديونية)
  */
-function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance) {
+function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance, debitCol = null, creditCol = null) {
+  // 1. فحص القيم الرقمية لعمودي مدين ودائن في الشيت إن وجدا (للتعرف على طبيعة الرصيد دائن أم مدين تلقائياً)
+  if (debitCol || creditCol) {
+    const dVal = debitCol ? parseNumber(row[debitCol]) : null;
+    const cVal = creditCol ? parseNumber(row[creditCol]) : null;
+    const d = (dVal !== null && !isNaN(dVal)) ? Math.abs(dVal) : 0;
+    const c = (cVal !== null && !isNaN(cVal)) ? Math.abs(cVal) : 0;
+
+    if (c > 0 && c > d) {
+      return true; // دائن قطعي (له رصيد / دفعة مقدمة)
+    }
+    if (d > 0 && d > c) {
+      return false; // مدين قطعي (عليه مديونية)
+    }
+  }
+
+  // 2. فحص عمود الحالة النصي (مدين / دائن / له / عليه)
   if (balanceTypeCol && row[balanceTypeCol] !== null && row[balanceTypeCol] !== undefined) {
     const raw = String(row[balanceTypeCol]).trim();
     const norm = normalizeText(raw);
@@ -880,7 +913,7 @@ function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, open
     }
   }
 
-  // إذا لم يتوفر عمود الحالة أو كانت الخلية فارغة، نعتمد على الإشارة السالبة إن وجدت
+  // 3. إذا لم يتوفر ما سبق أو كانت الخلية فارغة، نعتمد على الإشارة السالبة إن وجدت
   if (balance !== null && balance < 0) return true;
   if (closingBalance !== null && closingBalance < 0) return true;
   if (openingBalance !== null && openingBalance < 0) return true;
@@ -906,6 +939,22 @@ function applyMapping(sheetsData, sheetMappings) {
     // استكشاف تلقائي لعمود الحالة (مدين / دائن) بدون إلزام المستخدم بإدخاله في الواجهة
     const balanceTypeCol = detectBalanceTypeColumn(sheet, mapping);
 
+    // استكشاف تلقائي لعمودي مدين ودائن المحاسبيين (الأرقام) لدعم دقة التمييز بين المدين والدائن في كل ERP
+    let debitCol = null;
+    let creditCol = null;
+    const profiles = sheet.profile?.columnProfiles;
+    if (Array.isArray(sheet.headers)) {
+      sheet.headers.forEach((h, i) => {
+        const prof = profiles ? profiles[i] : null;
+        if (prof && prof.numericRatio < 0.4) return;
+        const hInfo = getHeaderWords(h);
+        const isDebit = hInfo.cleanWords.some(w => ['مدين', 'مدينة', 'مدينه', 'debit', 'dr'].map(cleanArabicWord).includes(w));
+        const isCredit = hInfo.cleanWords.some(w => ['دائن', 'داين', 'دائنة', 'داينه', 'credit', 'cr'].map(cleanArabicWord).includes(w));
+        if (isDebit && !isCredit) debitCol = h;
+        if (isCredit && !isDebit) creditCol = h;
+      });
+    }
+
     for (const row of sheet.data) {
       const rawName = row[mapping.clientName];
       if (rawName === null || rawName === undefined) continue;
@@ -928,12 +977,24 @@ function applyMapping(sheetsData, sheetMappings) {
       const date = mapping.date ? parseDate(row[mapping.date]) : null;
       const invoiceAmount = mapping.invoiceAmount ? parseNumber(row[mapping.invoiceAmount]) : 0;
       const paymentAmount = mapping.paymentAmount ? parseNumber(row[mapping.paymentAmount]) : 0;
-      const balance = mapping.balance ? parseNumber(row[mapping.balance]) : null;
-      const openingBalance = mapping.openingBalance ? parseNumber(row[mapping.openingBalance]) : null;
-      const closingBalance = mapping.closingBalance ? parseNumber(row[mapping.closingBalance]) : null;
+      let balance = mapping.balance ? parseNumber(row[mapping.balance]) : null;
+      let openingBalance = mapping.openingBalance ? parseNumber(row[mapping.openingBalance]) : null;
+      let closingBalance = mapping.closingBalance ? parseNumber(row[mapping.closingBalance]) : null;
 
-      // تحديد هل الحركة أو الرصيد دائن (له فلوس / دفعة مقدمة) أم مدين (عليه مديونية)
-      const isCredit = checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance);
+      // إذا لم يتوفر عمود رصيد صريح ولكن يتوفر عمودا مدين ودائن في شيت أرصدة
+      if (openingBalance === null && sheet.profile?.sheetContext?.isOpeningSheet && (debitCol || creditCol)) {
+        const d = debitCol ? (parseNumber(row[debitCol]) || 0) : 0;
+        const c = creditCol ? (parseNumber(row[creditCol]) || 0) : 0;
+        openingBalance = Math.abs(d - c);
+      }
+      if (closingBalance === null && sheet.profile?.sheetContext?.isClosingSheet && (debitCol || creditCol)) {
+        const d = debitCol ? (parseNumber(row[debitCol]) || 0) : 0;
+        const c = creditCol ? (parseNumber(row[creditCol]) || 0) : 0;
+        closingBalance = Math.abs(d - c);
+      }
+
+      // تحديد هل الحركة أو الرصيد دائن (له فلوس / دفعة مقدمة) أم مدين (عليه مديونية) بدقة واقعية
+      const isCredit = checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance, debitCol, creditCol);
 
       const signedBalance = balance !== null ? (isCredit ? -Math.abs(balance) : Math.abs(balance)) : null;
       const signedOpeningBalance = openingBalance !== null ? (isCredit ? -Math.abs(openingBalance) : Math.abs(openingBalance)) : null;
