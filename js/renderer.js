@@ -678,7 +678,7 @@ const Renderer = {
 
         let options = '';
         if (candidateList.length === 0) {
-          options = `<option value="" selected>-- غير موجود في هذا الملف --</option>`;
+          options = `<option value="" selected></option>`;
         } else {
           options = `<option value="">-- غير محدد --</option>` + candidateList.map(header => {
             const isMatch = header === detected;
