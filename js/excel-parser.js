@@ -109,7 +109,8 @@ const FIELD_NEGATIVE_PATTERNS = {
   date: [
     'اسم', 'عميل', 'حساب', 'زبون', 'customer', 'client', 'name',
     'رصيد', 'مدين', 'دائن', 'مبلغ', 'قيمة', 'balance', 'amount', 'total',
-    'كود', 'code', 'id', 'هاتف', 'phone', 'عنوان', 'address', 'تصنيف', 'حالة'
+    'كود', 'code', 'id', 'هاتف', 'phone', 'عنوان', 'address', 'تصنيف', 'حالة',
+    'خزينة', 'خزينه', 'بنك', 'صندوق', 'عهدة', 'ملاحظات', 'بيان', 'غرض'
   ],
 
   invoiceAmount: [
@@ -117,7 +118,8 @@ const FIELD_NEGATIVE_PATTERNS = {
     'هاتف', 'تلفون', 'phone', 'mobile',
     'تاريخ', 'date',
     'اسم', 'عميل', 'حساب', 'زبون', 'name',
-    'دائن', 'داين', 'credit', 'المحصل', 'تحصيل', 'سداد', 'مقبوضات', 'receipt', 'payment', 'paid'
+    'دائن', 'داين', 'credit', 'المحصل', 'تحصيل', 'سداد', 'مقبوضات', 'receipt', 'payment', 'paid',
+    'خزينة', 'خزينه', 'بنك', 'صندوق', 'عهدة', 'ملاحظات', 'بيان', 'غرض'
   ],
 
   paymentAmount: [
@@ -125,7 +127,8 @@ const FIELD_NEGATIVE_PATTERNS = {
     'هاتف', 'تلفون', 'phone', 'mobile',
     'تاريخ', 'date',
     'اسم', 'عميل', 'حساب', 'زبون', 'name',
-    'مدين', 'debit', 'فاتورة', 'مبيعات', 'sales', 'invoice'
+    'مدين', 'debit', 'فاتورة', 'مبيعات', 'sales', 'invoice',
+    'خزينة', 'خزينه', 'بنك', 'صندوق', 'عهدة', 'ملاحظات', 'بيان', 'غرض'
   ],
 
   openingBalance: [
@@ -134,7 +137,8 @@ const FIELD_NEGATIVE_PATTERNS = {
     'تاريخ', 'date',
     'اسم', 'عميل', 'حساب', 'زبون', 'name',
     'اخر', 'ختام', 'ختامي', 'حالي', 'نهائي', 'اقفال',
-    'closing', 'ending', 'current', 'final', 'end'
+    'closing', 'ending', 'current', 'final', 'end',
+    'خزينة', 'خزينه', 'بنك', 'صندوق', 'عهدة', 'ملاحظات', 'بيان', 'غرض'
   ],
 
   closingBalance: [
@@ -143,14 +147,16 @@ const FIELD_NEGATIVE_PATTERNS = {
     'تاريخ', 'date',
     'اسم', 'عميل', 'حساب', 'زبون', 'name',
     'اول', 'افتتاح', 'افتتاحي', 'سابق', 'بداية', 'مرحل',
-    'opening', 'beginning', 'start', 'prior', 'previous', 'before'
+    'opening', 'beginning', 'start', 'prior', 'previous', 'before',
+    'خزينة', 'خزينه', 'بنك', 'صندوق', 'عهدة', 'ملاحظات', 'بيان', 'غرض'
   ],
 
   balance: [
     'كود', 'code', 'id', 'رقم العميل', 'كود العميل', 'رقم الحساب', 'مسلسل', 'م',
     'هاتف', 'تلفون', 'phone', 'mobile',
     'تاريخ', 'date',
-    'اسم', 'عميل', 'حساب', 'زبون', 'name'
+    'اسم', 'عميل', 'حساب', 'زبون', 'name',
+    'خزينة', 'خزينه', 'بنك', 'صندوق', 'عهدة', 'ملاحظات', 'بيان', 'غرض'
   ]
 };
 
@@ -438,22 +444,22 @@ function isColumnEligibleForField(header, fieldKey, profile, sheetContext = {}, 
 
   // 2. اسم العميل
   if (fieldKey === 'clientName') {
+    // استبعاد تام وبلا استثناء إذا كان العمود خزينة أو بنك أو عهدة (الجانب المدين في سندات القبض / وسيلة السداد)
+    if (profile.isTreasuryOrBank) return false;
+
+    // استبعاد الأعمدة الرقمية، الهواتف، والتواريخ
+    if (profile.numericRatio > 0.35 || profile.isLikelyPhone || profile.dateRatio > 0.3) return false;
+
     const isExplicitClientName = getHeaderScore(header, COLUMN_PATTERNS.clientName.patterns, FIELD_NEGATIVE_PATTERNS.clientName) >= 0.5;
 
     // إذا كان العنوان صريحاً لاسم العميل (مثل "اسم العميل"، "العميل"، "اسم الحساب")
     if (isExplicitClientName) {
-      if (profile.numericRatio > 0.4) return false;
-      if (profile.isLikelyPhone) return false;
       return true; // مؤهل دائماً حتى لو كانت الحركات مكررة لحساب عام مثل "عميل نقدي" أو "إيرادات أخرى"
     }
 
     // إذا لم يكن العنوان صريحاً
-    if (profile.numericRatio > 0.25) return false;
     if (profile.textRatio < 0.4) return false;
     if (profile.isStatusOrCategory) return false;
-    if (profile.isLikelyPhone) return false;
-    if (profile.dateRatio > 0.3) return false;
-    if (profile.isTreasuryOrBank) return false;
     return true;
   }
 
@@ -522,7 +528,8 @@ function isColumnEligibleForField(header, fieldKey, profile, sheetContext = {}, 
  * يحلل محتوى وهيكل الشيت بذكاء بشري مع مراعاة اسم الملف وسياقه
  */
 function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
-  const sample = data.slice(0, 250);
+  // فحص عينة عميقة تصل إلى 1000 صف أو كامل الشيت لضمان قراءة واقعية وشاملة للمحتوى
+  const sample = data.slice(0, Math.min(data.length, 1000));
   const columnProfiles = headers.map(header => profileColumn(header, sample));
   const contextNameNormalized = normalizeText(fileName + ' ' + sheetName);
 
