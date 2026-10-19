@@ -638,14 +638,11 @@ const Renderer = {
 
     let html = `
       <div class="card" style="margin-bottom:16px; border-right:4px solid var(--accent-primary);">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <div>
-            <strong style="font-size:var(--text-base); color:var(--text-primary);">الربط المحاسبي الذكي للأعمدة</strong>
-            <p style="margin:4px 0 0; color:var(--text-secondary); font-size:var(--text-sm);">
-              قام النظام آلياً بتحليل محتوى وقيم الأعمدة واسم كل ملف، واستبعاد الأعمدة غير المطابقة (كالأكواد، والتصنيفات، والعناوين) لمنع التشتت والخطأ.
-            </p>
-          </div>
-          <span class="badge badge-good" style="font-size:0.8rem; padding:4px 10px;">⚡ ذكاء محاسبي بشري مفعل</span>
+        <div>
+          <strong style="font-size:var(--text-base); color:var(--text-primary);">الربط المحاسبي الذكي للأعمدة</strong>
+          <p style="margin:4px 0 0; color:var(--text-secondary); font-size:var(--text-sm);">
+            قام النظام آلياً بتحليل محتوى وقيم الأعمدة واسم كل ملف، واستبعاد الأعمدة غير المطابقة (كالأكواد، والتصنيفات، والعناوين) لمنع التشتت والخطأ.
+          </p>
         </div>
       </div>
     `;
