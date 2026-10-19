@@ -339,17 +339,17 @@ const App = {
       }
     });
 
-    // التحقق المبدئي: يجب أن يكون هناك على الأقل شيت واحد فيه اسم العميل ومبلغ (فاتورة أو رصيد)
+    // التحقق المبدئي: يجب أن يكون هناك على الأقل شيت واحد فيه اسم العميل ومبلغ (فاتورة أو سداد أو رصيد)
     let hasValidMapping = false;
     for (const mapping of Object.values(sheetMappings)) {
-      if (mapping.clientName && (mapping.invoiceAmount || mapping.closingBalance || mapping.openingBalance)) {
+      if (mapping.clientName && (mapping.invoiceAmount || mapping.paymentAmount || mapping.closingBalance || mapping.openingBalance)) {
         hasValidMapping = true;
         break;
       }
     }
 
     if (!hasValidMapping) {
-      showToast('يرجى ربط "اسم العميل" مع قيمة مالية (فاتورة أو رصيد) في شيت واحد على الأقل للبدء.', 'error');
+      showToast('يرجى ربط "اسم العميل" مع قيمة مالية (فاتورة أو سداد أو رصيد) في شيت واحد على الأقل للبدء.', 'error');
       return;
     }
 

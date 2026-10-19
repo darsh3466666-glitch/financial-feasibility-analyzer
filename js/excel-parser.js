@@ -14,14 +14,26 @@ const COLUMN_PATTERNS = {
     patterns: [
       'اسم العميل', 'العميل', 'اسم الزبون', 'الزبون', 'اسم الحساب', 'الحساب',
       'اسم الشريك', 'الشريك', 'اسم العميل/المورد', 'اسم الجهه', 'الجهه',
-      'customer', 'client', 'client name', 'customer name', 'account name', 'partner', 'party name'
+      'customer', 'client', 'client name', 'customer name', 'account name', 'partner', 'party name',
+      'اسم العميل / الحساب', 'اسم العميل/الحساب', 'العميل / الحساب', 'طرف التعامل', 'الطرف الثاني',
+      'المتعامل', 'اسم الشركة', 'اسم المنشأة', 'الزبائن', 'العملاء', 'حساب العميل',
+      'cust_name', 'customer_name', 'client_name', 'party'
     ]
   },
   date: {
     label: 'التاريخ',
     patterns: [
-      'التاريخ', 'تاريخ', 'تاريخ الفاتورة', 'تاريخ المعاملة', 'تاريخ القيد',
-      'تاريخ العملية', 'التاريخ الميلادي', 'date', 'invoice_date', 'transaction_date'
+      'ت السداد', 'ت.السداد', 'تاريخ السداد', 'ت السدادات', 'ت التحصيل', 'ت.التحصيل', 'تاريخ التحصيل',
+      'ت الاصدار', 'ت.الاصدار', 'تاريخ الاصدار', 'ت الصدور', 'ت.الصدور',
+      'ت الاستحقاق', 'ت.الاستحقاق', 'تاريخ الاستحقاق',
+      'ت السند', 'ت.السند', 'تاريخ السند', 'ت القبض', 'ت.القبض', 'ت الصرف', 'ت.الصرف',
+      'ت القيد', 'ت.القيد', 'تاريخ القيد', 'ت الحركة', 'ت.الحركة', 'تاريخ الحركة',
+      'ت الفاتورة', 'ت.الفاتورة', 'تاريخ الفاتورة', 'ت الدفع', 'ت.الدفع',
+      'ت المعاملة', 'ت.المعاملة', 'ت التسليم', 'ت.التسليم', 'ت البيع', 'ت.البيع',
+      'التاريخ', 'تاريخ', 'تاريخ المعاملة', 'تاريخ العملية', 'التاريخ الميلادي',
+      'تاريخ السند', 'تاريخ الايصال', 'تاريخ الدفعة',
+      'payment_date', 'receipt_date', 'due_date', 'issue_date', 'invoice_date', 'transaction_date',
+      'doc_date', 'voucher_date', 'trx_date', 'date'
     ]
   },
   invoiceAmount: {
@@ -86,8 +98,8 @@ const FIELD_NEGATIVE_PATTERNS = {
     'address', 'city', 'region', 'area', 'zone', 'country', 'governorate',
     'هاتف', 'تلفون', 'تليفون', 'موبايل', 'جوال', 'فاكس', 'ايميل', 'بريد', 'phone', 'mobile', 'tel', 'fax', 'email',
     'مندوب', 'بائع', 'فرع', 'مخزن', 'salesman', 'rep', 'branch', 'store', 'warehouse',
-    'ملاحظات', 'ملاحظة', 'بيان', 'تفاصيل', 'وصف', 'شرح', 'notes', 'remarks', 'description', 'details',
-    'طريقة', 'طريقة الدفع', 'دفع', 'وسيلة', 'شيك', 'بنك', 'خزينة', 'صندوق', 'سند', 'حوالة', 'فيزا', 'كاش',
+    'ملاحظات', 'ملاحظة', 'بيان', 'تفاصيل', 'وصف', 'شرح', 'غرض', 'الغرض', 'purpose', 'notes', 'remarks', 'description', 'details',
+    'طريقة', 'طريقة الدفع', 'دفع', 'وسيلة', 'شيك', 'بنك', 'خزينة', 'خزينه', 'صندوق', 'الصندوق', 'عهدة', 'عهده', 'سند', 'حوالة', 'فيزا', 'كاش',
     'رقم', 'مسلسل', 'م', 'no', 'serial', 'seq', 'num',
     'تاريخ', 'date', 'month', 'year', 'يوم', 'شهر', 'سنة',
     'رصيد', 'مدين', 'دائن', 'مبلغ', 'قيمة', 'فاتورة', 'سداد', 'تحصيل',
@@ -188,8 +200,18 @@ function containsNegativeWord(header, negatives) {
 async function parseExcelFiles(files) {
   const allSheets = [];
   
-  // الكلمات المفتاحية للبحث عن صف العناوين
-  const keywords = ['اسم', 'عميل', 'تاريخ', 'رصيد', 'مبلغ', 'فاتورة', 'قيمة', 'مدين', 'مبيعات', 'حساب'];
+  // الكلمات المفتاحية للبحث عن صف العناوين في مختلف برامج الـ ERP
+  const keywords = [
+    'اسم', 'عميل', 'زبون', 'حساب', 'جهة', 'customer', 'client', 'account',
+    'تاريخ', 'ت سداد', 'ت اصدار', 'ت استحقاق', 'ت قيد', 'ت حركة', 'ت سند', 'ت فاتورة', 'ت قبض', 'ت صرف', 'date',
+    'رصيد', 'افتتاح', 'سابق', 'ختام', 'حالي', 'نهائي', 'balance',
+    'مبلغ', 'قيمة', 'amount', 'total',
+    'فاتورة', 'فواتير', 'مبيعات', 'invoice', 'sales',
+    'مدين', 'دائن', 'debit', 'credit',
+    'سداد', 'تحصيل', 'مقبوضات', 'صرف', 'payment', 'receipt',
+    'رقم', 'كود', 'code', 'id', 'مسلسل',
+    'بيان', 'غرض', 'ملاحظات', 'وصف', 'description', 'notes'
+  ];
 
   for (const file of files) {
     const data = await readFileAsArrayBuffer(file);
@@ -208,14 +230,20 @@ async function parseExcelFiles(files) {
 
       for (let i = 0; i < Math.min(aoa.length, 15); i++) {
         const row = aoa[i];
-        if (!row) continue;
+        if (!row || !Array.isArray(row)) continue;
         
         let currentKeywords = 0;
         for (const cell of row) {
-          if (typeof cell === 'string') {
-            const normalized = normalizeText(cell);
-            if (keywords.some(k => normalized.includes(k))) {
-              currentKeywords++;
+          if (cell !== null && cell !== undefined && String(cell).trim() !== '') {
+            const cellStr = String(cell).trim();
+            const { cleanWords, rawWords, norm } = getHeaderWords(cellStr);
+            for (const kw of keywords) {
+              const kwNorm = normalizeText(kw);
+              const kwClean = cleanArabicWord(kw);
+              if (cleanWords.includes(kwClean) || rawWords.includes(kwNorm) || norm.includes(kwNorm)) {
+                currentKeywords++;
+                break;
+              }
             }
           }
         }
@@ -319,6 +347,7 @@ function profileColumn(header, rows) {
   let text = 0;
   let phoneCount = 0;
   let totalLength = 0;
+  let treasuryWordCount = 0;
   const uniqueValues = new Set();
 
   const STATUS_KEYWORDS = new Set([
@@ -328,6 +357,8 @@ function profileColumn(header, rows) {
     'أ', 'ب', 'ج', 'د', 'ا', 'a', 'b', 'c', 'd', 'vip', 'عادي', 'ممتاز', 'ضعيف', 'مقبول',
     'قطاعي', 'جملة', 'جمله', 'شركات', 'افراد', 'موزع', 'وكيل'
   ]);
+
+  const TREASURY_REGEX = /خزينة|خزينه|بنك|صندوق|عهدة|عهده|خزنة|خزنه/i;
 
   let statusWordCount = 0;
 
@@ -365,11 +396,17 @@ function profileColumn(header, rows) {
     if (words.some(w => STATUS_KEYWORDS.has(w)) || STATUS_KEYWORDS.has(norm)) {
       statusWordCount++;
     }
+    if (TREASURY_REGEX.test(str)) {
+      treasuryWordCount++;
+    }
   });
 
   const uniqueCount = uniqueValues.size;
-  const isStatusOrCategory = statusWordCount / Math.max(text, 1) >= 0.4 || (text > 0 && uniqueCount <= 4 && nonEmpty >= 8);
+  // التصنيف أو الحالة: إما تكرار كلمات الحالة المحاسبية أو رموز تصنيفية بالغة القصر (1-3 أحرف)
+  const isStatusOrCategory = (statusWordCount / Math.max(text, 1) >= 0.4) || 
+    (text >= 10 && uniqueCount <= 3 && (totalLength / Math.max(text, 1)) <= 4);
   const isLikelyPhone = phoneCount / Math.max(nonEmpty, 1) >= 0.3;
+  const isTreasuryOrBank = treasuryWordCount / Math.max(text, 1) >= 0.4;
 
   return {
     header,
@@ -380,6 +417,7 @@ function profileColumn(header, rows) {
     repeatedTextRatio: text ? 1 - (uniqueCount / text) : 0,
     isStatusOrCategory,
     isLikelyPhone,
+    isTreasuryOrBank,
     uniqueCount
   };
 }
@@ -400,16 +438,30 @@ function isColumnEligibleForField(header, fieldKey, profile, sheetContext = {}, 
 
   // 2. اسم العميل
   if (fieldKey === 'clientName') {
-    if (profile.numericRatio > 0.3) return false;
-    if (profile.textRatio < 0.5) return false;
+    const isExplicitClientName = getHeaderScore(header, COLUMN_PATTERNS.clientName.patterns, FIELD_NEGATIVE_PATTERNS.clientName) >= 0.5;
+
+    // إذا كان العنوان صريحاً لاسم العميل (مثل "اسم العميل"، "العميل"، "اسم الحساب")
+    if (isExplicitClientName) {
+      if (profile.numericRatio > 0.4) return false;
+      if (profile.isLikelyPhone) return false;
+      return true; // مؤهل دائماً حتى لو كانت الحركات مكررة لحساب عام مثل "عميل نقدي" أو "إيرادات أخرى"
+    }
+
+    // إذا لم يكن العنوان صريحاً
+    if (profile.numericRatio > 0.25) return false;
+    if (profile.textRatio < 0.4) return false;
     if (profile.isStatusOrCategory) return false;
     if (profile.isLikelyPhone) return false;
+    if (profile.dateRatio > 0.3) return false;
+    if (profile.isTreasuryOrBank) return false;
     return true;
   }
 
   // 3. التاريخ
   if (fieldKey === 'date') {
-    return profile.dateRatio > 0 || headerInfo.cleanWords.some(w => ['تاريخ', 'date', 'يوم', 'قيد'].includes(w));
+    if (profile.numericRatio > 0.8 && profile.dateRatio === 0) return false;
+    const isExplicitDate = getHeaderScore(header, COLUMN_PATTERNS.date.patterns, FIELD_NEGATIVE_PATTERNS.date) >= 0.5;
+    return profile.dateRatio > 0.2 || isExplicitDate;
   }
 
   // 4. الحقول المالية (مبالغ وأرصدة)
@@ -505,7 +557,7 @@ function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
     if (!isColumnEligibleForField(h, 'clientName', columnProfiles[i], sheetContext, hasMultipleFinancialCols)) return;
     const hScore = getHeaderScore(h, COLUMN_PATTERNS.clientName.patterns, FIELD_NEGATIVE_PATTERNS.clientName);
     const score = (hScore * 0.7) + (columnProfiles[i].textRatio * 0.3);
-    if (score > bestNameScore && score >= 0.4) {
+    if (score > bestNameScore && score >= 0.35) {
       bestNameScore = score;
       bestNameCol = h;
     }
@@ -513,13 +565,23 @@ function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
   suggestedMapping.clientName = bestNameCol;
 
   // 2. اكتشاف عمود التاريخ
+  const AUDIT_DATE_PATTERNS = ['added', 'create', 'created', 'creation', 'print', 'printed', 'system', 'export', 'اضاف', 'انشا', 'طباع'];
   let bestDateCol = null;
-  let bestDateScore = 0;
+  let bestDateScore = -999;
   headers.forEach((h, i) => {
     if (!isColumnEligibleForField(h, 'date', columnProfiles[i], sheetContext, hasMultipleFinancialCols)) return;
     const hScore = getHeaderScore(h, COLUMN_PATTERNS.date.patterns, FIELD_NEGATIVE_PATTERNS.date);
-    const score = (hScore * 0.5) + (columnProfiles[i].dateRatio * 0.5);
-    if (score > bestDateScore && score >= 0.45) {
+    let score = (hScore * 0.55) + (columnProfiles[i].dateRatio * 0.45);
+    const norm = normalizeText(h);
+    const isAudit = AUDIT_DATE_PATTERNS.some(p => norm.includes(p));
+    if (isAudit) score -= 0.6; // استبعاد أو تخفيض تواريخ الإدخال والطباعة لصالح تواريخ السداد والفواتير الفعلية
+    if (isPaymentsSheet) {
+      if (norm.includes('سداد') || norm.includes('تحصيل') || norm.includes('payment')) score += 0.4;
+      else if (norm.includes('اصدار') || norm.includes('issue')) score += 0.2;
+    } else if (isSalesSheet) {
+      if (norm.includes('فاتورة') || norm.includes('مبيعات') || norm.includes('invoice')) score += 0.4;
+    }
+    if (score > bestDateScore && score >= 0.4) {
       bestDateScore = score;
       bestDateCol = h;
     }
@@ -588,8 +650,20 @@ function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
   // بناء خيارات القوائم المنسدلة النظيفة والمفروزة لكل حقل (Dropdown Options)
   const dropdownOptions = {};
   ['clientName', 'date', 'invoiceAmount', 'paymentAmount', 'openingBalance', 'closingBalance'].forEach(fieldKey => {
-    const valid = headers.filter((h, i) => isColumnEligibleForField(h, fieldKey, columnProfiles[i], sheetContext, hasMultipleFinancialCols));
+    let valid = headers.filter((h, i) => isColumnEligibleForField(h, fieldKey, columnProfiles[i], sheetContext, hasMultipleFinancialCols));
     const detected = suggestedMapping[fieldKey];
+
+    // ترتيب الخيارات بحيث يكون العمود المكتشف أولاً، ثم حسب درجة الملاءمة
+    valid.sort((a, b) => {
+      if (a === detected) return -1;
+      if (b === detected) return 1;
+      const patterns = COLUMN_PATTERNS[fieldKey]?.patterns || [];
+      const negs = FIELD_NEGATIVE_PATTERNS[fieldKey] || [];
+      const scoreA = getHeaderScore(a, patterns, negs);
+      const scoreB = getHeaderScore(b, patterns, negs);
+      return scoreB - scoreA;
+    });
+
     if (detected && !valid.includes(detected)) {
       valid.unshift(detected);
     }
@@ -1003,15 +1077,22 @@ function normalizeText(text) {
  */
 function calculateSimilarity(str1, str2) {
   if (str1 === str2) return 1;
-  if (str1.includes(str2) || str2.includes(str1)) return 0.9;
+  if (str1.includes(str2) || str2.includes(str1)) {
+    const shorter = str1.length < str2.length ? str1 : str2;
+    if (shorter.length >= 3) return 0.9;
+  }
 
-  const words1 = str1.split(' ');
-  const words2 = str2.split(' ');
+  const words1 = str1.split(' ').filter(w => w.length > 0);
+  const words2 = str2.split(' ').filter(w => w.length > 0);
   let matches = 0;
 
   for (const w1 of words1) {
     for (const w2 of words2) {
-      if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) {
+      if (w1 === w2) {
+        matches++;
+        break;
+      }
+      if (w1.length >= 3 && w2.length >= 3 && (w1.includes(w2) || w2.includes(w1))) {
         matches++;
         break;
       }
