@@ -630,53 +630,88 @@ const Renderer = {
       const suggestedMapping = sheet.profile?.suggestedMapping || {};
       return {
         suggestedMapping,
-        columnProfiles: sheet.profile?.columnProfiles || []
+        columnProfiles: sheet.profile?.columnProfiles || [],
+        dropdownOptions: sheet.profile?.dropdownOptions || {},
+        sheetContext: sheet.profile?.sheetContext || {}
       };
     });
 
     let html = `
       <div class="card" style="margin-bottom:16px; border-right:4px solid var(--accent-primary);">
-        <strong style="font-size:var(--text-base);">الربط اليدوي المتقدم</strong>
-        <p style="margin:6px 0 0; color:var(--text-secondary); font-size:var(--text-sm);">
-          تم تجاهل أي عمود فارغ، وأي عمود لا يحتوي على بيانات تتطابق مع الحقل المطلوب لتسهيل ودقة الربط.
-        </p>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <strong style="font-size:var(--text-base); color:var(--text-primary);">الربط المحاسبي الذكي للأعمدة</strong>
+            <p style="margin:4px 0 0; color:var(--text-secondary); font-size:var(--text-sm);">
+              قام النظام آلياً بتحليل محتوى وقيم الأعمدة واسم كل ملف، واستبعاد الأعمدة غير المطابقة (كالأكواد، والتصنيفات، والعناوين) لمنع التشتت والخطأ.
+            </p>
+          </div>
+          <span class="badge badge-good" style="font-size:0.8rem; padding:4px 10px;">⚡ ذكاء محاسبي بشري مفعل</span>
+        </div>
       </div>
     `;
 
     sheets.forEach((sheet, sheetIndex) => {
       const profile = profiles[sheetIndex];
       const mapping = profile.suggestedMapping;
-      const colProfiles = profile.columnProfiles;
+      const dropdownOpts = profile.dropdownOptions;
+      const sc = profile.sheetContext;
+
+      let roleBadge = '';
+      if (sc?.isOpeningSheet) {
+        roleBadge = `<span class="badge badge-good" style="font-size:0.75rem;">⚡ ملف أرصدة سابقة (أول المدة)</span>`;
+      } else if (sc?.isClosingSheet) {
+        roleBadge = `<span class="badge badge-primary" style="font-size:0.75rem;">⚡ ملف أرصدة حالية (آخر المدة)</span>`;
+      } else if (sc?.isSalesSheet) {
+        roleBadge = `<span class="badge badge-warning" style="font-size:0.75rem;">⚡ ملف فواتير ومبيعات</span>`;
+      } else if (sc?.isPaymentsSheet) {
+        roleBadge = `<span class="badge badge-success" style="font-size:0.75rem;">⚡ ملف تحصيلات وسدادات</span>`;
+      } else if (sc?.isStatementSheet) {
+        roleBadge = `<span class="badge badge-average" style="font-size:0.75rem;">⚡ كشف حساب متكامل</span>`;
+      }
 
       const selector = field => {
         const detected = mapping[field.key] || '';
-        
-        // فلترة الأعمدة: تجاهل الفارغة وتجاهل التي لا تطابق نوع البيانات
-        const validHeaders = sheet.headers.filter((header, i) => {
-          const colProf = colProfiles[i];
-          if (!colProf || colProf.nonEmpty === 0) return false; // تجاهل العمود الفارغ
-          
-          if (field.type === 'date') return colProf.dateRatio > 0;
-          if (field.type === 'numeric') return colProf.numericRatio > 0;
-          if (field.type === 'text') return colProf.textRatio > 0;
-          return true;
-        });
+        const eligibleHeaders = dropdownOpts[field.key] || [];
 
-        // إضافة المكتشف تلقائياً حتى لو تم استبعاده لتفادي فقدانه
-        if (detected && !validHeaders.includes(detected)) {
-          validHeaders.push(detected);
+        // قائمة المرشحين المؤهلين منطقياً
+        const candidateList = [...eligibleHeaders];
+        if (detected && !candidateList.includes(detected)) {
+          candidateList.unshift(detected);
         }
 
-        const options = validHeaders.map(header =>
-          `<option value="${escapeHTML(header)}" ${header === detected ? 'selected' : ''}>${escapeHTML(header)}</option>`
-        ).join('');
-        
-        return `<div class="mapping-item"><span class="mapping-label">${field.label}</span><select class="form-input form-select mapping-select" data-sheet-index="${sheetIndex}" data-field="${field.key}" id="mapping-${sheetIndex}-${field.key}"><option value="">-- غير موجود --</option>${options}</select></div>`;
+        let options = '';
+        if (candidateList.length === 0) {
+          options = `<option value="" selected>-- غير موجود في هذا الملف --</option>`;
+        } else {
+          options = `<option value="">-- غير محدد --</option>` + candidateList.map(header => {
+            const isMatch = header === detected;
+            return `<option value="${escapeHTML(header)}" ${isMatch ? 'selected' : ''}>${escapeHTML(header)}${isMatch ? ' ✨ (تطابق تلقائي)' : ''}</option>`;
+          }).join('');
+        }
+
+        return `
+          <div class="mapping-item">
+            <span class="mapping-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>${field.label}</span>
+              ${detected ? `<span style="font-size:0.7rem; color:var(--accent-success); font-weight:600;">✓ تم التحديد</span>` : ''}
+            </span>
+            <select class="form-input form-select mapping-select" data-sheet-index="${sheetIndex}" data-field="${field.key}" id="mapping-${sheetIndex}-${field.key}">
+              ${options}
+            </select>
+          </div>
+        `;
       };
 
       html += `
-        <div class="file-mapping-card" style="margin-bottom:12px; padding:14px; border:1px solid var(--border-subtle); border-radius:var(--radius-md);">
-          <h4 style="margin:0 0 8px; font-size:var(--text-sm); color:var(--accent-primary);">${escapeHTML(sheet.fileName)} — ${escapeHTML(sheet.sheetName)}</h4>
+        <div class="file-mapping-card" style="margin-bottom:16px; padding:16px; border:1px solid var(--border-default); border-radius:var(--radius-md); background:var(--bg-surface-elevated); box-shadow:var(--shadow-sm);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="font-size:1.1rem;">📁</span>
+              <strong style="font-size:var(--text-sm); color:var(--text-primary);">${escapeHTML(sheet.fileName)} — ${escapeHTML(sheet.sheetName)}</strong>
+              ${roleBadge}
+            </div>
+            <span style="font-size:var(--text-xs); color:var(--text-secondary); background:var(--bg-surface); padding:3px 8px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">${formatNumber(sheet.rowCount)} صف</span>
+          </div>
           <div class="mapping-grid">${fields.map(selector).join('')}</div>
         </div>
       `;

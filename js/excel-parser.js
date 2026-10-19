@@ -5,39 +5,39 @@
 /**
  * أنماط أسماء الأعمدة المتوقعة للاكتشاف التلقائي
  */
+/**
+ * أنماط أسماء الأعمدة المتوقعة للاكتشاف التلقائي مع دعم أوسع لجميع برامج الـ ERP
+ */
 const COLUMN_PATTERNS = {
   clientName: {
     label: 'اسم العميل',
     patterns: [
-      'اسم العميل', 'العميل', 'اسم', 'الاسم', 'عميل', 'اسم المورد',
-      'client', 'customer', 'name', 'client_name', 'customer_name',
-      'اسم الزبون', 'الزبون', 'اسم العميل/المورد', 'اسم الحساب',
-      'حساب', 'الحساب'
+      'اسم العميل', 'العميل', 'اسم الزبون', 'الزبون', 'اسم الحساب', 'الحساب',
+      'اسم الشريك', 'الشريك', 'اسم العميل/المورد', 'اسم الجهه', 'الجهه',
+      'customer', 'client', 'client name', 'customer name', 'account name', 'partner', 'party name'
     ]
   },
   date: {
     label: 'التاريخ',
     patterns: [
-      'التاريخ', 'تاريخ', 'تاريخ الفاتورة', 'تاريخ المعاملة',
-      'date', 'invoice_date', 'transaction_date', 'تاريخ القيد',
-      'تاريخ العملية', 'التاريخ الميلادي'
+      'التاريخ', 'تاريخ', 'تاريخ الفاتورة', 'تاريخ المعاملة', 'تاريخ القيد',
+      'تاريخ العملية', 'التاريخ الميلادي', 'date', 'invoice_date', 'transaction_date'
     ]
   },
   invoiceAmount: {
-    label: 'قيمة الفاتورة',
+    label: 'قيمة الفاتورة / المبيعات',
     patterns: [
-      'قيمة الفاتورة', 'المبلغ', 'القيمة', 'مبلغ', 'قيمة', 'المبيعات',
-      'مدين', 'مبيعات', 'إجمالي', 'الإجمالي', 'صافي',
-      'amount', 'invoice_amount', 'total', 'sales', 'debit',
-      'قيمة البيع', 'مبلغ الفاتورة', 'اجمالي الفاتورة'
+      'حركات مدينة', 'مدين', 'المدين', 'المبيعات', 'مبيعات', 'فواتير', 'الفواتير',
+      'قيمة الفاتورة', 'مبلغ الفاتورة', 'قيمة المبيعات', 'اجمالي الفاتورة',
+      'debit', 'sales', 'invoice amount', 'invoices', 'invoice'
     ]
   },
   paymentAmount: {
-    label: 'المحصّل (دائن)',
+    label: 'المحصّل / السداد (دائن)',
     patterns: [
-      'دائن', 'المحصل', 'محصل', 'التحصيل', 'تحصيل', 'المدفوع', 'مدفوع',
-      'payment', 'credit', 'collected', 'paid', 'receipt',
-      'سداد', 'مسدد', 'الدائن', 'مبلغ السداد', 'قيمة السداد'
+      'حركات دائنة', 'دائن', 'الدائن', 'المحصل', 'محصل', 'تحصيل', 'التحصيل', 'تحصيلات',
+      'سداد', 'السداد', 'سدادات', 'مقبوضات', 'المقبوضات', 'المدفوع', 'دفعة',
+      'credit', 'payment', 'receipt', 'collected', 'paid'
     ]
   },
   balance: {
@@ -45,21 +45,23 @@ const COLUMN_PATTERNS = {
     patterns: [
       'الرصيد', 'رصيد', 'الرصيد الحالي', 'رصيد حالي', 'الرصيد المتبقي',
       'balance', 'current_balance', 'remaining', 'outstanding',
-      'رصيد العميل', 'الرصيد المدين', 'المتبقي', 'رصيد مدين'
+      'رصيد العميل', 'الرصيد المدين', 'المتبقي', 'صافي الرصيد', 'صافي'
     ]
   },
   openingBalance: {
     label: 'رصيد أول المدة',
     patterns: [
-      'رصيد أول المدة', 'رصيد اول المدة', 'رصيد افتتاحي', 'الرصيد الافتتاحي',
-      'opening balance', 'beginning balance', 'start balance'
+      'رصيد أول المدة', 'رصيد اول المدة', 'رصيد سابق', 'الرصيد السابق',
+      'رصيد افتتاحي', 'الرصيد الافتتاحي', 'رصيد افتتاح', 'رصيد بداية', 'رصيد مرحل',
+      'opening balance', 'beginning balance', 'start balance', 'prior balance', 'initial balance', 'beg balance'
     ]
   },
   closingBalance: {
     label: 'رصيد آخر المدة',
     patterns: [
-      'رصيد آخر المدة', 'رصيد اخر المدة', 'رصيد ختامي', 'الرصيد الختامي',
-      'الرصيد الحالي', 'رصيد حالي', 'closing balance', 'ending balance', 'current balance'
+      'رصيد آخر المدة', 'رصيد اخر المدة', 'الرصيد الحالي', 'رصيد حالي',
+      'رصيد ختامي', 'الرصيد الختامي', 'صافي الرصيد', 'الرصيد النهائي', 'رصيد نهائي',
+      'الرصيد', 'رصيد', 'closing balance', 'ending balance', 'current balance', 'end balance', 'balance'
     ]
   },
   balanceType: {
@@ -71,6 +73,117 @@ const COLUMN_PATTERNS = {
     ]
   }
 };
+
+/**
+ * قوائم الكلمات السلبية المستبعدة تماماً من كل حقل لمنع اختلاط المعاني
+ */
+const FIELD_NEGATIVE_PATTERNS = {
+  clientName: [
+    'كود', 'code', 'id', 'تصنيف', 'فئة', 'نوع', 'شريحة', 'درجة',
+    'category', 'class', 'type', 'tier', 'group', 'مجموعة',
+    'حالة', 'وضع', 'نشط', 'status', 'active', 'state', 'condition',
+    'عنوان', 'منطقة', 'محافظة', 'مدينة', 'مركز', 'بلد', 'شارع',
+    'address', 'city', 'region', 'area', 'zone', 'country', 'governorate',
+    'هاتف', 'تلفون', 'تليفون', 'موبايل', 'جوال', 'فاكس', 'ايميل', 'بريد', 'phone', 'mobile', 'tel', 'fax', 'email',
+    'مندوب', 'بائع', 'فرع', 'مخزن', 'salesman', 'rep', 'branch', 'store', 'warehouse',
+    'ملاحظات', 'ملاحظة', 'بيان', 'تفاصيل', 'وصف', 'شرح', 'notes', 'remarks', 'description', 'details',
+    'طريقة', 'طريقة الدفع', 'دفع', 'وسيلة', 'شيك', 'بنك', 'خزينة', 'صندوق', 'سند', 'حوالة', 'فيزا', 'كاش',
+    'رقم', 'مسلسل', 'م', 'no', 'serial', 'seq', 'num',
+    'تاريخ', 'date', 'month', 'year', 'يوم', 'شهر', 'سنة',
+    'رصيد', 'مدين', 'دائن', 'مبلغ', 'قيمة', 'فاتورة', 'سداد', 'تحصيل',
+    'balance', 'debit', 'credit', 'amount', 'total', 'tax', 'ضريبة', 'ضريبه'
+  ],
+
+  date: [
+    'اسم', 'عميل', 'حساب', 'زبون', 'customer', 'client', 'name',
+    'رصيد', 'مدين', 'دائن', 'مبلغ', 'قيمة', 'balance', 'amount', 'total',
+    'كود', 'code', 'id', 'هاتف', 'phone', 'عنوان', 'address', 'تصنيف', 'حالة'
+  ],
+
+  invoiceAmount: [
+    'كود', 'code', 'id', 'رقم العميل', 'كود العميل', 'رقم الحساب', 'مسلسل', 'م',
+    'هاتف', 'تلفون', 'phone', 'mobile',
+    'تاريخ', 'date',
+    'اسم', 'عميل', 'حساب', 'زبون', 'name',
+    'دائن', 'داين', 'credit', 'المحصل', 'تحصيل', 'سداد', 'مقبوضات', 'receipt', 'payment', 'paid'
+  ],
+
+  paymentAmount: [
+    'كود', 'code', 'id', 'رقم العميل', 'كود العميل', 'رقم الحساب', 'مسلسل', 'م',
+    'هاتف', 'تلفون', 'phone', 'mobile',
+    'تاريخ', 'date',
+    'اسم', 'عميل', 'حساب', 'زبون', 'name',
+    'مدين', 'debit', 'فاتورة', 'مبيعات', 'sales', 'invoice'
+  ],
+
+  openingBalance: [
+    'كود', 'code', 'id', 'رقم العميل', 'كود العميل', 'رقم الحساب', 'مسلسل', 'م',
+    'هاتف', 'تلفون', 'phone', 'mobile',
+    'تاريخ', 'date',
+    'اسم', 'عميل', 'حساب', 'زبون', 'name',
+    'اخر', 'ختام', 'ختامي', 'حالي', 'نهائي', 'اقفال',
+    'closing', 'ending', 'current', 'final', 'end'
+  ],
+
+  closingBalance: [
+    'كود', 'code', 'id', 'رقم العميل', 'كود العميل', 'رقم الحساب', 'مسلسل', 'م',
+    'هاتف', 'تلفون', 'phone', 'mobile',
+    'تاريخ', 'date',
+    'اسم', 'عميل', 'حساب', 'زبون', 'name',
+    'اول', 'افتتاح', 'افتتاحي', 'سابق', 'بداية', 'مرحل',
+    'opening', 'beginning', 'start', 'prior', 'previous', 'before'
+  ],
+
+  balance: [
+    'كود', 'code', 'id', 'رقم العميل', 'كود العميل', 'رقم الحساب', 'مسلسل', 'م',
+    'هاتف', 'تلفون', 'phone', 'mobile',
+    'تاريخ', 'date',
+    'اسم', 'عميل', 'حساب', 'زبون', 'name'
+  ]
+};
+
+/**
+ * تنظيف الكلمة العربية وإزالة أل التعريف للمقارنة الدقيقة
+ */
+function cleanArabicWord(w) {
+  let s = normalizeText(w);
+  if (s.startsWith('ال') && s.length > 3) s = s.slice(2);
+  return s;
+}
+
+/**
+ * تحليل كلمات العنوان
+ */
+function getHeaderWords(header) {
+  const norm = normalizeText(header);
+  const rawWords = norm.split(' ').filter(Boolean);
+  const cleanWords = rawWords.map(cleanArabicWord);
+  return { norm, rawWords, cleanWords };
+}
+
+/**
+ * فحص استبعاد كلمة سلبية بحدود الكلمة لمنع الخلط
+ */
+function containsNegativeWord(header, negatives) {
+  if (!negatives || !negatives.length) return false;
+  const headerInfo = getHeaderWords(header);
+  
+  for (const neg of negatives) {
+    const negNorm = normalizeText(neg);
+    const cNeg = cleanArabicWord(neg);
+
+    if (!negNorm.includes(' ')) {
+      if (headerInfo.cleanWords.includes(cNeg) || headerInfo.rawWords.includes(negNorm)) {
+        return true;
+      }
+    } else {
+      if (headerInfo.norm.includes(negNorm)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 async function parseExcelFiles(files) {
   const allSheets = [];
@@ -178,184 +291,15 @@ function readFileAsArrayBuffer(file) {
  * @param {Array<string>} headers - أسماء الأعمدة
  * @returns {Object} الربط المكتشف
  */
-function autoDetectColumns(headers, columnProfiles = []) {
-  const mapping = {};
-
-  for (const [field, config] of Object.entries(COLUMN_PATTERNS)) {
-    let bestMatch = null;
-    let bestScore = 0;
-
-    for (let i = 0; i < headers.length; i++) {
-      if ((field === 'openingBalance' || field === 'closingBalance') && !hasSpecificBalanceTiming(headers[i], field)) {
-        continue;
-      }
-      const headerScore = getHeaderScore(headers[i], config.patterns);
-      const profile = columnProfiles[i];
-      const contentScore = getContentScore(field, profile);
-      // الاسم يحدد المعنى، والقيم تؤكد أن العمود صالح لهذا المعنى.
-      const score = headerScore > 0 ? (headerScore * 0.8) + (contentScore * 0.2) : contentScore * 0.35;
-      // المحتوى يؤكد نوع البيانات فقط؛ لا يجوز أن يحول «قيمة الفاتورة» إلى «سداد» لمجرد أن كليهما أرقام.
-      const minimumHeaderScore = field === 'clientName' || field === 'date' ? 0.5 : 0.6;
-
-      if (headerScore >= minimumHeaderScore && score > bestScore && score > 0.5) {
-        bestScore = score;
-        bestMatch = headers[i];
-      }
-    }
-
-    mapping[field] = bestMatch;
-  }
-
-  return mapping;
-}
-
-function hasSpecificBalanceTiming(header, field) {
-  const normalized = normalizeText(header);
-  const terms = field === 'openingBalance'
-    ? ['اول', 'افتتاح', 'opening', 'beginning', 'start']
-    : ['اخر', 'ختام', 'حالي', 'closing', 'ending', 'current'];
-  return terms.some(term => normalized.includes(term));
-}
-
 /**
- * يحلل محتوى الأعمدة (وليس رأس العمود فقط) حتى تكون الاقتراحات آمنة مع تنسيقات مختلفة.
+ * حساب التشابه والملائمة لرأس العمود مع استبعاد الكلمات السلبية
  */
-function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
-  const sample = data.slice(0, 250);
-  const columnProfiles = headers.map(header => profileColumn(header, sample));
-  const contextNameNormalized = normalizeText(fileName + ' ' + sheetName);
-  
-  const sheetHints = {
-    invoices: getHeaderScore(contextNameNormalized, ['فواتير', 'فاتوره', 'مبيعات', 'invoice', 'sales']),
-    payments: getHeaderScore(contextNameNormalized, ['سداد', 'تحصيل', 'مقبوضات', 'قبض', 'صرف', 'payment', 'receipt', 'collection']),
-    balances: getHeaderScore(contextNameNormalized, ['ارصده', 'أرصدة', 'رصيد', 'ميزان', 'balance', 'statement'])
-  };
-  
-  const suggestedMapping = autoDetectColumns(headers, columnProfiles);
-  const genericAmount = findGenericAmountColumn(headers, columnProfiles);
-  
-  // استكشاف عمود الرصيد العام
-  let genericBalance = null;
-  let bestBalScore = 0;
-  headers.forEach((h, i) => {
-    const s = getHeaderScore(h, COLUMN_PATTERNS.balance.patterns) * 0.7 + (columnProfiles[i]?.numericRatio || 0) * 0.3;
-    if (s > bestBalScore && s >= 0.5) {
-      bestBalScore = s;
-      genericBalance = h;
-    }
-  });
-
-  const isOpeningSheet = getHeaderScore(contextNameNormalized, ['اول', 'افتتاحي', 'بداية', 'opening', 'start']) >= 0.6;
-  const isClosingSheet = getHeaderScore(contextNameNormalized, ['حالي', 'اخر', 'نهاية', 'ختامي', 'closing', 'end', 'current']) >= 0.6;
-
-  // الذكاء الجديد: توجيه عمود "الرصيد" بناءً على اسم الملف أو الشيت (أول أو آخر المدة)
-  if (genericBalance) {
-    if (isOpeningSheet) {
-      suggestedMapping.openingBalance = genericBalance;
-      if (suggestedMapping.closingBalance === genericBalance) suggestedMapping.closingBalance = null;
-      if (suggestedMapping.balance === genericBalance) suggestedMapping.balance = null;
-    } else if (isClosingSheet) {
-      suggestedMapping.closingBalance = genericBalance;
-      if (suggestedMapping.openingBalance === genericBalance) suggestedMapping.openingBalance = null;
-      if (suggestedMapping.balance === genericBalance) suggestedMapping.balance = null;
-    }
+function getHeaderScore(header, patterns, negativePatterns = []) {
+  if (containsNegativeWord(header, negativePatterns)) {
+    return 0; // استبعاد تام
   }
-
-  // الذكاء الجديد: توجيه عمود "المبلغ/القيمة" بناءً على اسم الملف أو الشيت بقوة، ومنع التداخل.
-  if (genericAmount) {
-    if (sheetHints.payments >= 0.6 && sheetHints.payments > sheetHints.invoices) {
-      suggestedMapping.paymentAmount = genericAmount;
-      if (suggestedMapping.invoiceAmount === genericAmount) {
-        suggestedMapping.invoiceAmount = null;
-      }
-    } else if (sheetHints.invoices >= 0.6 && sheetHints.invoices > sheetHints.payments) {
-      suggestedMapping.invoiceAmount = genericAmount;
-      if (suggestedMapping.paymentAmount === genericAmount) {
-        suggestedMapping.paymentAmount = null;
-      }
-    }
-  }
-
-  const nameScore = getMappedScore('clientName', suggestedMapping, headers, columnProfiles);
-  const dateScore = getMappedScore('date', suggestedMapping, headers, columnProfiles);
-  const invoiceScore = getMappedScore('invoiceAmount', suggestedMapping, headers, columnProfiles);
-  const paymentScore = getMappedScore('paymentAmount', suggestedMapping, headers, columnProfiles);
-  const balanceScore = Math.max(
-    getMappedScore('balance', suggestedMapping, headers, columnProfiles),
-    getMappedScore('closingBalance', suggestedMapping, headers, columnProfiles)
-  );
-  const openingScore = getMappedScore('openingBalance', suggestedMapping, headers, columnProfiles);
-
-  const invoiceRoleScore = (nameScore * 0.35) + (invoiceScore * 0.45) + (dateScore * 0.1) + (sheetHints.invoices * 0.1)
-    - (sheetHints.payments >= 0.6 && sheetHints.invoices < 0.6 ? 0.4 : 0);
-  const paymentRoleScore = (nameScore * 0.35) + (paymentScore * 0.45) + (dateScore * 0.1) + (sheetHints.payments * 0.1)
-    - (sheetHints.invoices >= 0.6 && sheetHints.payments < 0.6 ? 0.4 : 0);
-
-  const roleScores = {
-    invoices: Math.max(0, Math.round(invoiceRoleScore * 100) / 100),
-    payments: Math.max(0, Math.round(paymentRoleScore * 100) / 100),
-    balances: Math.round(((nameScore * 0.4) + (balanceScore * 0.4) + (openingScore * 0.1) + (sheetHints.balances * 0.1)) * 100) / 100
-  };
-
-  return {
-    columnProfiles,
-    suggestedMapping,
-    roleScores,
-    evidence: buildProfileEvidence(suggestedMapping, headers, columnProfiles)
-  };
-}
-
-function findGenericAmountColumn(headers, profiles) {
-  const genericPatterns = ['المبلغ', 'مبلغ', 'القيمة', 'قيمة', 'amount', 'total', 'اجمالي', 'الإجمالي'];
-  let candidate = null;
-  let bestScore = 0;
-
-  headers.forEach((header, index) => {
-    const headerScore = getHeaderScore(header, genericPatterns);
-    const numericRatio = profiles[index]?.numericRatio || 0;
-    const score = (headerScore * 0.65) + (numericRatio * 0.35);
-    if (headerScore >= 0.6 && numericRatio >= 0.6 && score > bestScore) {
-      candidate = header;
-      bestScore = score;
-    }
-  });
-
-  return candidate;
-}
-
-function profileColumn(header, rows) {
-  let nonEmpty = 0;
-  let numeric = 0;
-  let dates = 0;
-  let text = 0;
-  const uniqueText = new Set();
-
-  rows.forEach(row => {
-    const value = row[header];
-    if (value === null || value === undefined || String(value).trim() === '') return;
-    nonEmpty++;
-
-    if (isLikelyDateValue(value)) {
-      dates++;
-      return;
-    }
-
-    if (parseNumber(value) !== null) {
-      numeric++;
-      return;
-    }
-
-    text++;
-    uniqueText.add(normalizeText(value));
-  });
-
-  return {
-    nonEmpty,
-    numericRatio: nonEmpty ? numeric / nonEmpty : 0,
-    dateRatio: nonEmpty ? dates / nonEmpty : 0,
-    textRatio: nonEmpty ? text / nonEmpty : 0,
-    repeatedTextRatio: text ? 1 - (uniqueText.size / text) : 0
-  };
+  const normalizedHeader = normalizeText(header);
+  return patterns.reduce((best, pattern) => Math.max(best, calculateSimilarity(normalizedHeader, normalizeText(pattern))), 0);
 }
 
 function isLikelyDateValue(value) {
@@ -365,14 +309,344 @@ function isLikelyDateValue(value) {
     || /^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/.test(text);
 }
 
-function getHeaderScore(header, patterns) {
-  const normalizedHeader = normalizeText(header);
-  return patterns.reduce((best, pattern) => Math.max(best, calculateSimilarity(normalizedHeader, normalizeText(pattern))), 0);
+/**
+ * فحص المحتوى الإحصائي والتصنيفي الدقيق للعمود
+ */
+function profileColumn(header, rows) {
+  let nonEmpty = 0;
+  let numeric = 0;
+  let dates = 0;
+  let text = 0;
+  let phoneCount = 0;
+  let totalLength = 0;
+  const uniqueValues = new Set();
+
+  const STATUS_KEYWORDS = new Set([
+    'نشط', 'غير نشط', 'موقف', 'معلق', 'ملغي', 'فعال', 'نعم', 'لا',
+    'active', 'inactive', 'suspended', 'cancelled', 'yes', 'no', 'true', 'false',
+    'مدين', 'داين', 'دائن', 'debit', 'credit', 'cr', 'dr', 'له', 'عليه',
+    'أ', 'ب', 'ج', 'د', 'ا', 'a', 'b', 'c', 'd', 'vip', 'عادي', 'ممتاز', 'ضعيف', 'مقبول',
+    'قطاعي', 'جملة', 'جمله', 'شركات', 'افراد', 'موزع', 'وكيل'
+  ]);
+
+  let statusWordCount = 0;
+
+  rows.forEach(row => {
+    const raw = row[header];
+    if (raw === null || raw === undefined) return;
+    const str = String(raw).trim();
+    if (str === '' || str === 'null' || str === 'undefined') return;
+
+    nonEmpty++;
+    uniqueValues.add(str.toLowerCase());
+
+    if (isLikelyDateValue(raw)) {
+      dates++;
+      return;
+    }
+
+    const cleanDigits = str.replace(/[\s\-\+]/g, '');
+    if (/^(01[0125]\d{8}|201[0125]\d{8}|05\d{8}|9665\d{8})$/.test(cleanDigits)) {
+      phoneCount++;
+      numeric++;
+      return;
+    }
+
+    const num = parseNumber(raw);
+    if (num !== null) {
+      numeric++;
+      return;
+    }
+
+    text++;
+    totalLength += str.length;
+    const norm = normalizeText(str);
+    const words = norm.split(' ').map(cleanArabicWord);
+    if (words.some(w => STATUS_KEYWORDS.has(w)) || STATUS_KEYWORDS.has(norm)) {
+      statusWordCount++;
+    }
+  });
+
+  const uniqueCount = uniqueValues.size;
+  const isStatusOrCategory = statusWordCount / Math.max(text, 1) >= 0.4 || (text > 0 && uniqueCount <= 4 && nonEmpty >= 8);
+  const isLikelyPhone = phoneCount / Math.max(nonEmpty, 1) >= 0.3;
+
+  return {
+    header,
+    nonEmpty,
+    numericRatio: nonEmpty ? numeric / nonEmpty : 0,
+    dateRatio: nonEmpty ? dates / nonEmpty : 0,
+    textRatio: nonEmpty ? text / nonEmpty : 0,
+    repeatedTextRatio: text ? 1 - (uniqueCount / text) : 0,
+    isStatusOrCategory,
+    isLikelyPhone,
+    uniqueCount
+  };
+}
+
+/**
+ * التحقق المحاسبي الصارم مما إذا كان العمود مؤهلاً وصالحاً منطقياً ليكون خياراً للحقل المطلوب
+ */
+function isColumnEligibleForField(header, fieldKey, profile, sheetContext = {}, hasMultipleFinancialCols = false) {
+  if (!profile || profile.nonEmpty === 0) return false;
+
+  const headerInfo = getHeaderWords(header);
+
+  // 1. فحص الكلمات السلبية الصارمة لكل حقل
+  const negatives = FIELD_NEGATIVE_PATTERNS[fieldKey] || [];
+  if (containsNegativeWord(header, negatives)) {
+    return false;
+  }
+
+  // 2. اسم العميل
+  if (fieldKey === 'clientName') {
+    if (profile.numericRatio > 0.3) return false;
+    if (profile.textRatio < 0.5) return false;
+    if (profile.isStatusOrCategory) return false;
+    if (profile.isLikelyPhone) return false;
+    return true;
+  }
+
+  // 3. التاريخ
+  if (fieldKey === 'date') {
+    return profile.dateRatio > 0 || headerInfo.cleanWords.some(w => ['تاريخ', 'date', 'يوم', 'قيد'].includes(w));
+  }
+
+  // 4. الحقول المالية (مبالغ وأرصدة)
+  if (['invoiceAmount', 'paymentAmount', 'openingBalance', 'closingBalance'].includes(fieldKey)) {
+    if (profile.numericRatio < 0.6) return false;
+    if (profile.isLikelyPhone) return false;
+
+    // استبعاد أكواد وأرقام الحسابات والهواتف
+    if (headerInfo.cleanWords.some(w => ['كود', 'code', 'id', 'هاتف', 'phone', 'مسلسل', 'رقم'].includes(w))) {
+      return false;
+    }
+
+    const isDebitWord = headerInfo.cleanWords.some(w => ['مدين', 'مدينة', 'مدينه', 'مبيعات', 'فواتير', 'فاتورة', 'debit', 'sales'].map(cleanArabicWord).includes(w));
+    const isCreditWord = headerInfo.cleanWords.some(w => ['دائن', 'داين', 'دائنة', 'داينه', 'تحصيل', 'سداد', 'مقبوضات', 'محصل', 'المحصل', 'credit', 'payment', 'receipt'].map(cleanArabicWord).includes(w));
+    const isExplicitOpening = headerInfo.cleanWords.some(w => ['اول', 'سابق', 'افتتاح', 'افتتاحي', 'مرحل', 'بداية', 'opening', 'prior'].map(cleanArabicWord).includes(w));
+    const isExplicitClosing = headerInfo.cleanWords.some(w => ['اخر', 'ختام', 'ختامي', 'حالي', 'نهائي', 'اقفال', 'closing', 'ending', 'current'].map(cleanArabicWord).includes(w));
+    const isGenericBalance = headerInfo.cleanWords.some(w => ['رصيد', 'صافي', 'balance'].map(cleanArabicWord).includes(w));
+
+    if (fieldKey === 'openingBalance') {
+      if (isCreditWord || isDebitWord) return false;
+      if (sheetContext.isClosingSheet && isGenericBalance && !isExplicitOpening) return false;
+      if (sheetContext.isSalesSheet || sheetContext.isPaymentsSheet) return false;
+      if (hasMultipleFinancialCols && !isExplicitOpening && !(sheetContext.isOpeningSheet && isGenericBalance)) {
+        return false;
+      }
+      return true;
+    }
+
+    if (fieldKey === 'closingBalance') {
+      if (isCreditWord || isDebitWord) return false;
+      if (sheetContext.isOpeningSheet && isGenericBalance && !isExplicitClosing) return false;
+      if (sheetContext.isSalesSheet || sheetContext.isPaymentsSheet) return false;
+      if (hasMultipleFinancialCols && !isExplicitClosing && !isGenericBalance) {
+        return false;
+      }
+      return true;
+    }
+
+    if (fieldKey === 'invoiceAmount') {
+      if (isCreditWord) return false;
+      if (isExplicitOpening || isExplicitClosing || isGenericBalance) return false;
+      if (sheetContext.isPaymentsSheet && !isDebitWord) return false;
+      return true;
+    }
+
+    if (fieldKey === 'paymentAmount') {
+      if (isDebitWord) return false;
+      if (isExplicitOpening || isExplicitClosing || isGenericBalance) return false;
+      if (sheetContext.isSalesSheet && !isCreditWord) return false;
+      return true;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * يحلل محتوى وهيكل الشيت بذكاء بشري مع مراعاة اسم الملف وسياقه
+ */
+function analyzeSheetStructure(headers, data, sheetName = '', fileName = '') {
+  const sample = data.slice(0, 250);
+  const columnProfiles = headers.map(header => profileColumn(header, sample));
+  const contextNameNormalized = normalizeText(fileName + ' ' + sheetName);
+
+  // استنباط سياق وغرض الملف من الاسم
+  const isOpeningSheet = ['سابق', 'قديم', 'اول', 'افتتاح', 'افتتاحي', 'بداية', 'مرحل', 'opening', 'prior', 'previous', 'before', 'start']
+    .some(w => contextNameNormalized.includes(cleanArabicWord(w)) || contextNameNormalized.includes(normalizeText(w)));
+
+  const isClosingSheet = ['حالي', 'اخر', 'ختام', 'ختامي', 'نهاية', 'نهائي', 'اقفال', 'closing', 'ending', 'current', 'final', 'end']
+    .some(w => contextNameNormalized.includes(cleanArabicWord(w)) || contextNameNormalized.includes(normalizeText(w)));
+
+  const isSalesSheet = ['فواتير', 'مبيعات', 'بيع', 'اجل', 'invoices', 'sales', 'invoice']
+    .some(w => contextNameNormalized.includes(cleanArabicWord(w)) || contextNameNormalized.includes(normalizeText(w)));
+
+  const isPaymentsSheet = ['سداد', 'تحصيل', 'مقبوضات', 'قبض', 'صرف', 'ايصالات', 'payments', 'receipts', 'collection']
+    .some(w => contextNameNormalized.includes(cleanArabicWord(w)) || contextNameNormalized.includes(normalizeText(w)));
+
+  const isStatementSheet = ['كشف حساب', 'استاذ', 'ميزان مراجعة', 'statement', 'ledger']
+    .some(w => contextNameNormalized.includes(cleanArabicWord(w)) || contextNameNormalized.includes(normalizeText(w)));
+
+  const sheetContext = { isOpeningSheet, isClosingSheet, isSalesSheet, isPaymentsSheet, isStatementSheet };
+
+  // حساب عدد الأعمدة المالية المتاحة
+  const numericCount = columnProfiles.filter(p => p.numericRatio >= 0.6).length;
+  const hasMultipleFinancialCols = numericCount >= 3;
+
+  const suggestedMapping = {};
+
+  // 1. اكتشاف عمود اسم العميل
+  let bestNameCol = null;
+  let bestNameScore = 0;
+  headers.forEach((h, i) => {
+    if (!isColumnEligibleForField(h, 'clientName', columnProfiles[i], sheetContext, hasMultipleFinancialCols)) return;
+    const hScore = getHeaderScore(h, COLUMN_PATTERNS.clientName.patterns, FIELD_NEGATIVE_PATTERNS.clientName);
+    const score = (hScore * 0.7) + (columnProfiles[i].textRatio * 0.3);
+    if (score > bestNameScore && score >= 0.4) {
+      bestNameScore = score;
+      bestNameCol = h;
+    }
+  });
+  suggestedMapping.clientName = bestNameCol;
+
+  // 2. اكتشاف عمود التاريخ
+  let bestDateCol = null;
+  let bestDateScore = 0;
+  headers.forEach((h, i) => {
+    if (!isColumnEligibleForField(h, 'date', columnProfiles[i], sheetContext, hasMultipleFinancialCols)) return;
+    const hScore = getHeaderScore(h, COLUMN_PATTERNS.date.patterns, FIELD_NEGATIVE_PATTERNS.date);
+    const score = (hScore * 0.5) + (columnProfiles[i].dateRatio * 0.5);
+    if (score > bestDateScore && score >= 0.45) {
+      bestDateScore = score;
+      bestDateCol = h;
+    }
+  });
+  suggestedMapping.date = bestDateCol;
+
+  // 3. تصنيف الأعمدة المالية الصريحة
+  let explicitOpening = null;
+  let explicitClosing = null;
+  let explicitDebit = null;
+  let explicitCredit = null;
+  let genericBalance = null;
+  let genericAmount = null;
+
+  headers.forEach((h, i) => {
+    const prof = columnProfiles[i];
+    if (prof.numericRatio < 0.6) return;
+    const hInfo = getHeaderWords(h);
+
+    if (containsNegativeWord(h, ['كود', 'code', 'id', 'هاتف', 'phone', 'مسلسل', 'رقم'])) return;
+
+    if (hInfo.cleanWords.some(w => ['اول', 'افتتاح', 'افتتاحي', 'سابق', 'مرحل', 'بداية', 'opening', 'prior'].map(cleanArabicWord).includes(w))) {
+      explicitOpening = h;
+    } else if (hInfo.cleanWords.some(w => ['اخر', 'ختام', 'ختامي', 'حالي', 'نهائي', 'اقفال', 'closing', 'ending', 'current'].map(cleanArabicWord).includes(w))) {
+      explicitClosing = h;
+    } else if (hInfo.cleanWords.some(w => ['مدين', 'مدينة', 'مدينه', 'مبيعات', 'فواتير', 'فاتورة', 'debit', 'sales'].map(cleanArabicWord).includes(w))) {
+      explicitDebit = h;
+    } else if (hInfo.cleanWords.some(w => ['دائن', 'داين', 'دائنة', 'داينه', 'تحصيل', 'سداد', 'مقبوضات', 'محصل', 'المحصل', 'credit', 'payment', 'receipt'].map(cleanArabicWord).includes(w))) {
+      explicitCredit = h;
+    } else if (hInfo.cleanWords.some(w => ['الرصيد', 'رصيد', 'balance', 'صافي'].map(cleanArabicWord).includes(w))) {
+      genericBalance = h;
+    } else if (hInfo.cleanWords.some(w => ['المبلغ', 'القيمة', 'amount', 'total'].map(cleanArabicWord).includes(w))) {
+      genericAmount = h;
+    }
+  });
+
+  // الربط الذكي وفقاً لسياق اسم الملف وطبيعة الأعمدة
+  if (isOpeningSheet) {
+    suggestedMapping.openingBalance = explicitOpening || genericBalance || null;
+    suggestedMapping.closingBalance = null;
+    suggestedMapping.invoiceAmount = explicitDebit || null;
+    suggestedMapping.paymentAmount = explicitCredit || null;
+  } else if (isClosingSheet) {
+    suggestedMapping.closingBalance = explicitClosing || genericBalance || null;
+    suggestedMapping.openingBalance = explicitOpening || null;
+    suggestedMapping.invoiceAmount = explicitDebit || null;
+    suggestedMapping.paymentAmount = explicitCredit || null;
+  } else if (isSalesSheet) {
+    suggestedMapping.invoiceAmount = explicitDebit || genericAmount || null;
+    suggestedMapping.paymentAmount = null;
+    suggestedMapping.openingBalance = null;
+    suggestedMapping.closingBalance = null;
+  } else if (isPaymentsSheet) {
+    suggestedMapping.paymentAmount = explicitCredit || genericAmount || null;
+    suggestedMapping.invoiceAmount = null;
+    suggestedMapping.openingBalance = null;
+    suggestedMapping.closingBalance = null;
+  } else {
+    // شيت عام (كشف حساب، ميزان مراجعة، تقرير عملاء)
+    suggestedMapping.openingBalance = explicitOpening || null;
+    suggestedMapping.closingBalance = explicitClosing || genericBalance || null;
+    suggestedMapping.invoiceAmount = explicitDebit || null;
+    suggestedMapping.paymentAmount = explicitCredit || null;
+  }
+
+  // بناء خيارات القوائم المنسدلة النظيفة والمفروزة لكل حقل (Dropdown Options)
+  const dropdownOptions = {};
+  ['clientName', 'date', 'invoiceAmount', 'paymentAmount', 'openingBalance', 'closingBalance'].forEach(fieldKey => {
+    const valid = headers.filter((h, i) => isColumnEligibleForField(h, fieldKey, columnProfiles[i], sheetContext, hasMultipleFinancialCols));
+    const detected = suggestedMapping[fieldKey];
+    if (detected && !valid.includes(detected)) {
+      valid.unshift(detected);
+    }
+    dropdownOptions[fieldKey] = valid;
+  });
+
+  const roleScores = {
+    invoices: isSalesSheet ? 1 : (suggestedMapping.invoiceAmount ? 0.8 : 0),
+    payments: isPaymentsSheet ? 1 : (suggestedMapping.paymentAmount ? 0.8 : 0),
+    balances: (isOpeningSheet || isClosingSheet || isStatementSheet) ? 1 : 0.5
+  };
+
+  return {
+    columnProfiles,
+    suggestedMapping,
+    dropdownOptions,
+    sheetContext,
+    roleScores,
+    evidence: buildProfileEvidence(suggestedMapping, headers, columnProfiles)
+  };
+}
+
+function autoDetectColumns(headers, columnProfiles = []) {
+  const mapping = {};
+  for (const [field, config] of Object.entries(COLUMN_PATTERNS)) {
+    let bestMatch = null;
+    let bestScore = 0;
+    for (let i = 0; i < headers.length; i++) {
+      if ((field === 'openingBalance' || field === 'closingBalance') && !hasSpecificBalanceTiming(headers[i], field)) {
+        continue;
+      }
+      const headerScore = getHeaderScore(headers[i], config.patterns, FIELD_NEGATIVE_PATTERNS[field] || []);
+      const profile = columnProfiles[i];
+      const contentScore = getContentScore(field, profile);
+      const score = headerScore > 0 ? (headerScore * 0.8) + (contentScore * 0.2) : contentScore * 0.35;
+      const minimumHeaderScore = field === 'clientName' || field === 'date' ? 0.5 : 0.6;
+      if (headerScore >= minimumHeaderScore && score > bestScore && score > 0.5) {
+        bestScore = score;
+        bestMatch = headers[i];
+      }
+    }
+    mapping[field] = bestMatch;
+  }
+  return mapping;
+}
+
+function hasSpecificBalanceTiming(header, field) {
+  const normalized = normalizeText(header);
+  const terms = field === 'openingBalance'
+    ? ['اول', 'افتتاح', 'opening', 'beginning', 'start', 'سابق', 'prior']
+    : ['اخر', 'ختام', 'حالي', 'closing', 'ending', 'current'];
+  return terms.some(term => normalized.includes(term));
 }
 
 function getContentScore(field, profile) {
   if (!profile || profile.nonEmpty === 0) return 0;
-  if (field === 'clientName') return Math.min(1, (profile.textRatio * 0.8) + (profile.repeatedTextRatio * 0.2));
+  if (field === 'clientName') return Math.min(1, (profile.textRatio * 0.8) + ((profile.repeatedTextRatio || 0) * 0.2));
   if (field === 'date') return profile.dateRatio;
   if (field === 'balanceType') return profile.textRatio;
   return profile.numericRatio;
@@ -383,7 +657,7 @@ function getMappedScore(field, mapping, headers, profiles) {
   if (!header) return 0;
   const index = headers.indexOf(header);
   const config = COLUMN_PATTERNS[field];
-  return (getHeaderScore(header, config.patterns) * 0.8) + (getContentScore(field, profiles[index]) * 0.2);
+  return (getHeaderScore(header, config.patterns, FIELD_NEGATIVE_PATTERNS[field] || []) * 0.8) + (getContentScore(field, profiles[index]) * 0.2);
 }
 
 function buildProfileEvidence(mapping, headers, profiles) {
@@ -392,7 +666,7 @@ function buildProfileEvidence(mapping, headers, profiles) {
     .map(([field, header]) => {
       const profile = profiles[headers.indexOf(header)];
       const valueType = field === 'clientName' ? 'نص' : field === 'date' ? 'تاريخ' : 'رقم';
-      return `${COLUMN_PATTERNS[field].label}: ${header} (${profile.nonEmpty} قيمة ${valueType})`;
+      return `${COLUMN_PATTERNS[field]?.label || field}: ${header} (${profile?.nonEmpty || 0} قيمة ${valueType})`;
     });
 }
 
@@ -494,7 +768,7 @@ function detectBalanceTypeColumn(sheet, mapping = {}) {
 /**
  * فحص ما إذا كان الصف أو الرصيد دائناً (له رصيد / دفعة مقدمة) أم مديناً (عليه مديونية)
  */
-function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance) {
+function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance) {
   if (balanceTypeCol && row[balanceTypeCol] !== null && row[balanceTypeCol] !== undefined) {
     const raw = String(row[balanceTypeCol]).trim();
     const norm = normalizeText(raw);
@@ -528,6 +802,7 @@ function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance) {
   // إذا لم يتوفر عمود الحالة أو كانت الخلية فارغة، نعتمد على الإشارة السالبة إن وجدت
   if (balance !== null && balance < 0) return true;
   if (closingBalance !== null && closingBalance < 0) return true;
+  if (openingBalance !== null && openingBalance < 0) return true;
   return false;
 }
 
@@ -577,7 +852,7 @@ function applyMapping(sheetsData, sheetMappings) {
       const closingBalance = mapping.closingBalance ? parseNumber(row[mapping.closingBalance]) : null;
 
       // تحديد هل الحركة أو الرصيد دائن (له فلوس / دفعة مقدمة) أم مدين (عليه مديونية)
-      const isCredit = checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance);
+      const isCredit = checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance);
 
       const signedBalance = balance !== null ? (isCredit ? -Math.abs(balance) : Math.abs(balance)) : null;
       const signedOpeningBalance = openingBalance !== null ? (isCredit ? -Math.abs(openingBalance) : Math.abs(openingBalance)) : null;
