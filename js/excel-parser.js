@@ -867,22 +867,7 @@ function detectBalanceTypeColumn(sheet, mapping = {}) {
  * فحص ما إذا كان الصف أو الرصيد دائناً (له رصيد / دفعة مقدمة) أم مديناً (عليه مديونية)
  */
 function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance, debitCol = null, creditCol = null) {
-  // 1. فحص القيم الرقمية لعمودي مدين ودائن في الشيت إن وجدا (للتعرف على طبيعة الرصيد دائن أم مدين تلقائياً)
-  if (debitCol || creditCol) {
-    const dVal = debitCol ? parseNumber(row[debitCol]) : null;
-    const cVal = creditCol ? parseNumber(row[creditCol]) : null;
-    const d = (dVal !== null && !isNaN(dVal)) ? Math.abs(dVal) : 0;
-    const c = (cVal !== null && !isNaN(cVal)) ? Math.abs(cVal) : 0;
-
-    if (c > 0 && c > d) {
-      return true; // دائن قطعي (له رصيد / دفعة مقدمة)
-    }
-    if (d > 0 && d > c) {
-      return false; // مدين قطعي (عليه مديونية)
-    }
-  }
-
-  // 2. فحص عمود الحالة النصي (مدين / دائن / له / عليه)
+  // 1. فحص عمود الحالة الصريح من الشيت (مثل "الحالة" أو "طبيعة الرصيد") - الأولوية الأولى والقطعية
   if (balanceTypeCol && row[balanceTypeCol] !== null && row[balanceTypeCol] !== undefined) {
     const raw = String(row[balanceTypeCol]).trim();
     const norm = normalizeText(raw);
@@ -898,7 +883,7 @@ function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, open
       norm.includes('دفعه مقدمه') || 
       norm.includes('مقدم')
     ) {
-      return true;
+      return true; // دائن قطعي بنص عمود الحالة
     }
     
     // التحقق من المدين
@@ -909,11 +894,26 @@ function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, open
       norm === 'dr' || 
       norm === 'عليه'
     ) {
-      return false;
+      return false; // مدين قطعي بنص عمود الحالة
     }
   }
 
-  // 3. إذا لم يتوفر ما سبق أو كانت الخلية فارغة، نعتمد على الإشارة السالبة إن وجدت
+  // 2. إذا لم يتوفر عمود الحالة (أو كانت الخلية فارغة)، نفحص القيم الرقمية لعمودي مدين ودائن إن وجدا
+  if (debitCol || creditCol) {
+    const dVal = debitCol ? parseNumber(row[debitCol]) : null;
+    const cVal = creditCol ? parseNumber(row[creditCol]) : null;
+    const d = (dVal !== null && !isNaN(dVal)) ? Math.abs(dVal) : 0;
+    const c = (cVal !== null && !isNaN(cVal)) ? Math.abs(cVal) : 0;
+
+    if (c > 0 && c > d) {
+      return true; // دائن قطعي (له رصيد / دفعة مقدمة)
+    }
+    if (d > 0 && d > c) {
+      return false; // مدين قطعي (عليه مديونية)
+    }
+  }
+
+  // 3. إذا لم يتوفر ما سبق، نعتمد على الإشارة السالبة للرصيد
   if (balance !== null && balance < 0) return true;
   if (closingBalance !== null && closingBalance < 0) return true;
   if (openingBalance !== null && openingBalance < 0) return true;
