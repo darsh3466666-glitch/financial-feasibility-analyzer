@@ -866,7 +866,7 @@ function detectBalanceTypeColumn(sheet, mapping = {}) {
 /**
  * فحص ما إذا كان الصف أو الرصيد دائناً (له رصيد / دفعة مقدمة) أم مديناً (عليه مديونية)
  */
-function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance, debitCol = null, creditCol = null) {
+function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance, debitCol = null, creditCol = null, mapping = {}) {
   // 1. فحص عمود الحالة الصريح من الشيت (مثل "الحالة" أو "طبيعة الرصيد") - الأولوية الأولى والقطعية
   if (balanceTypeCol && row[balanceTypeCol] !== null && row[balanceTypeCol] !== undefined) {
     const raw = String(row[balanceTypeCol]).trim();
@@ -913,7 +913,17 @@ function checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, open
     }
   }
 
-  // 3. إذا لم يتوفر ما سبق، نعتمد على الإشارة السالبة للرصيد
+  // 3. فحص نصوص خلايا الرصيد نفسها إن تضمنت كلمة دائن أو CR مباشرة داخل خانة الرقم
+  const balanceCols = [mapping?.balance, mapping?.openingBalance, mapping?.closingBalance, 'الرصيد', 'رصيد'].filter(Boolean);
+  for (const col of balanceCols) {
+    if (row[col] !== null && row[col] !== undefined) {
+      const s = String(row[col]).trim().toLowerCase();
+      if (s.includes('دائن') || s.includes('داين') || s.includes('cr') || s.includes('له')) return true;
+      if (s.includes('مدين') || s.includes('dr') || s.includes('عليه')) return false;
+    }
+  }
+
+  // 4. إذا لم يتوفر ما سبق، نعتمد على الإشارة السالبة للرصيد (سواء سالبة عادية، أو ناتجة عن أقواس محاسبية أو علامة سالب خلفية)
   if (balance !== null && balance < 0) return true;
   if (closingBalance !== null && closingBalance < 0) return true;
   if (openingBalance !== null && openingBalance < 0) return true;
@@ -994,7 +1004,7 @@ function applyMapping(sheetsData, sheetMappings) {
       }
 
       // تحديد هل الحركة أو الرصيد دائن (له فلوس / دفعة مقدمة) أم مدين (عليه مديونية) بدقة واقعية
-      const isCredit = checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance, debitCol, creditCol);
+      const isCredit = checkRowCreditStatus(row, balanceTypeCol, balance, closingBalance, openingBalance, debitCol, creditCol, mapping);
 
       const signedBalance = balance !== null ? (isCredit ? -Math.abs(balance) : Math.abs(balance)) : null;
       const signedOpeningBalance = openingBalance !== null ? (isCredit ? -Math.abs(openingBalance) : Math.abs(openingBalance)) : null;
@@ -1108,20 +1118,34 @@ function parseDate(value) {
 }
 
 /**
- * تحويل الأرقام
+ * تحويل الأرقام مع دعم كامل لجميع صيغ الـ ERP والأقواس المحاسبية
  */
 function parseNumber(value) {
   if (value === null || value === undefined) return null;
   if (typeof value === 'number') return value;
 
-  const str = String(value)
+  let str = String(value)
     .replace(/,/g, '')
     .replace(/٬/g, '')
     .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
     .replace(/\s/g, '')
     .trim();
 
-  const num = parseFloat(str);
+  // دعم الأقواس المحاسبية للأرقام السالبة: (1500) أو (1,500.50) -> -1500.50
+  if (/^\((.*)\)$/.test(str)) {
+    str = '-' + str.slice(1, -1);
+  }
+  // دعم الإشارة السالبة في نهاية الرقم (شائع في تقارير SAP/Oracle/AS400): 1500- -> -1500
+  else if (/^(.+)-$/.test(str)) {
+    str = '-' + str.slice(0, -1);
+  }
+
+  // استخراج الإشارة السالبة وتنظيف باقي الرموز
+  const isNegative = str.startsWith('-');
+  const cleanDigits = str.replace(/[^0-9.]/g, '');
+  if (!cleanDigits) return null;
+
+  const num = parseFloat((isNegative ? '-' : '') + cleanDigits);
   return isNaN(num) ? null : num;
 }
 
