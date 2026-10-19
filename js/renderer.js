@@ -707,7 +707,7 @@ const Renderer = {
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <span style="font-size:1.1rem;">📁</span>
-              <strong style="font-size:var(--text-sm); color:var(--text-primary);">${escapeHTML(sheet.fileName)} — ${escapeHTML(sheet.sheetName)}</strong>
+              <strong style="font-size:var(--text-sm); color:var(--text-primary);">${escapeHTML(sheet.fileName)}</strong>
               ${roleBadge}
             </div>
             <span style="font-size:var(--text-xs); color:var(--text-secondary); background:var(--bg-surface); padding:3px 8px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">${formatNumber(sheet.rowCount)} صف</span>
